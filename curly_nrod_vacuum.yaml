@@ -1,0 +1,47 @@
+fluorophore:
+  extinction_coeff: 200000.0
+  lifetime: 3.8e-09
+  make_sphere: false
+  mass_gamma: 0.075
+  pos_unit_vec: [1.0, 0.0, 0.0]
+  res_energy: 2.18
+  test_gamma: 0.075
+spectra:
+  min_energy: 1.0
+  max_energy: 3.0
+  energy_step_size: 0.05
+general:
+  background_ref_index: 1.0
+  coupling: ff
+  dipole_orientation: [1.0, 0.0, 0.0]
+  drive_amp: 30.0
+  drive_energy: 2.18
+  fields: far
+  max_sep: 2.51e-05
+  min_sep: 200.0e-07
+  sep_step_size: 10.0e-07
+optics:
+  lens_points: 1000 
+  magnification: 1.0 
+  numerical_aperture: 1.0
+  obj_f_len: 0.2
+  sensor_size: 2000
+  sensor_pts: 100
+plasmon:
+  drude_damping_energy: 0.066
+  eps_inf: 10
+  fit_hbar_gamma: 0.06778709544892923
+  fit_hbar_w0: 1.857
+  fit_eps_inf: 12.42358064082486
+  fit_hbar_wp: 9.896193581047589
+  fit_a1: 48.558393197333274
+  fit_a2: 19.931635421512183
+  # fit_hbar_w2: 2.661
+  # fit_l2_hbar_gamma: 0.06327
+  # fit_l2_mass: 4.778
+  fit_mass: 5.161e-34
+  # include_quadrupole: false
+  # incorperate_parameters_from_fit: true
+  plasma_energy: 9.0705
+  # pos_unit_vec: [-1.0, 0.0, 0.0]
+  radius: 0.0e-06
