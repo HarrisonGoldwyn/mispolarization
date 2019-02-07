@@ -1,0 +1,1018 @@
+
+# coding: utf-8
+
+# In[1]:
+
+from __future__ import print_function
+from __future__ import division
+
+import pdb
+import sys
+import os
+import numpy as np
+import scipy.optimize as opt
+from scipy import interpolate
+import scipy.io as sio
+import scipy.special as spf
+import yaml
+
+## import diffrantion integral solver from Optics folder
+work_dir = os.getcwd()
+date_dir = os.path.split(work_dir)[0]
+optics_folder = os.path.join(date_dir, 'Optics')
+sys.path.append(optics_folder)
+sys.path.append(date_dir)
+import diffraction_int as diffi
+import fibonacci as fib
+
+
+## Import field functions
+# field_module_folder = os.path.join(date_dir, 'field_functions')             
+# sys.path.append(field_module_folder)
+# import far_fields as fi
+## Read parameter file to obtain fields
+stream = open('../curly_param.yaml','r')
+parameters = yaml.load(stream)
+
+
+## plotting stuff
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+get_ipython().magic('matplotlib inline')
+# mpl.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+## for Palatino and other serif fonts use:
+#rc('font',**{'family':'serif','serif':['Palatino']})
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams["lines.linewidth"]
+
+## colorbar stuff 
+from mpl_toolkits import axes_grid1
+
+# import eqm_slns as osc
+
+## analytic image functions
+# import analytic_intensity_functions_xyz as imf
+
+## dipole moments as functions of separation, not pulled from param file
+# import p_of_d_genOr as pod
+
+# pretty fitting
+# import lmfit as lf
+
+import anal_foc_diff_fields as afi
+
+import coupled_dipoles as cp 
+
+## Import physical constants
+full_path_to_constant_yaml = os.path.join(date_dir,'physical_constants.yaml')
+opened_constant_file = open(full_path_to_constant_yaml,'r')
+constants = yaml.load(opened_constant_file)
+e = constants['physical_constants']['e']
+c = constants['physical_constants']['c']  # charge of electron in statcoloumbs
+hbar =constants['physical_constants']['hbar']
+nm = constants['physical_constants']['nm']
+n_a = constants['physical_constants']['nA']   # Avogadro's number
+# Z_o = 376.7303 # impedence of free space in ohms (SI)
+
+## System background
+n_b = parameters['general']['background_ref_index']
+eps_b = n_b**2.
+
+a = parameters['plasmon']['radius']
+
+
+
+#######################################################################
+## Optics stuff.  
+sensor_size = parameters['optics']['sensor_size']*nm
+# height = 2*mm  # also defines objective lens focal length 
+# height = parameters['optics']['obj_f_len']
+resolution = parameters['optics']['sensor_pts']  # image grid resolution
+## Build image sensor
+eye = diffi.observation_points(
+    x_min= -sensor_size/2, 
+    x_max= sensor_size/2,
+    y_min= -sensor_size/2, 
+    y_max= sensor_size/2, 
+    points= resolution
+    )
+
+## Experimental parameters
+magnification = parameters['optics']['magnification']
+numerical_aperture = parameters['optics']['numerical_aperture']
+max_theta = np.arcsin(numerical_aperture) # defines physical aperture size
+
+## numerical parameters for calculation of scattered field
+lens_points = parameters['optics']['lens_points']
+
+# obj_f = 1.*mm  # still dont know what this is supposed to be
+obj_f = parameters['optics']['obj_f_len']
+
+tube_f = magnification * obj_f
+
+## calculate dipole magnitudes
+drive_hbar_omega = parameters['general']['drive_energy'] ## rod long mode max at 1.8578957289256757 eV
+omega_drive = drive_hbar_omega/hbar  # driving frequency
+
+
+
+
+
+class DipoleProperties(object):
+    """"""
+
+    def __init__(self):
+
+        self.fit_result_params = (
+            ## eps_inf, hbar*omega_p, hbar*gamma_nr, eps_b 
+            ## (not used as fit param), a_x, a_yz
+            15.100176, 
+            10.15232758/hbar, 
+            0.10316881/hbar, 
+            1.0, 
+            67.24906658*nm, 
+            19.20816015*nm
+            )
+        self.alpha0_diag_dyad = cp.sparse_polarizability_tensor(
+            mass=cp.fluorophore_mass(
+                ext_coef=parameters['fluorophore']['extinction_coeff'], 
+                gamma=parameters['fluorophore']['mass_gamma']/hbar
+                ), 
+            w_res=drive_hbar_omega/hbar, 
+            w=drive_hbar_omega/hbar, 
+            gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
+            a=0, 
+            eps_inf=1, 
+            ebs_b=1
+            )
+        self.alpha1_diag_dyad = (
+            cp.sparse_ret_prolate_spheroid_polarizability_Drude(
+                omega_drive, *self.fit_result_params
+                )
+            )
+
+
+class BeamSplitter(object):
+
+    def __init__():
+        pass
+
+    def powers_and_angels(self,E):
+        drive_I = np.abs(parameters['general']['drive_amp'])**2.
+        
+        normed_Ix = np.abs(E[0])**2. / drive_I
+        normed_Iy = np.abs(E[1])**2. / drive_I
+
+        Px_per_drive_I = np.sum(normed_Ix,axis=-1) / sensor_size**2.
+        Py_per_drive_I = np.sum(normed_Iy,axis=-1) / sensor_size**2.
+        
+
+        angles = np.arctan(Py_per_drive_I**0.5/Px_per_drive_I**0.5)
+        return [angles, Px_per_drive_I, Py_per_drive_I]
+
+    def powers_and_angels_no_interf(self,E1,E2):
+        drive_I = np.abs(parameters['general']['drive_amp'])**2.
+        
+        normed_Ix = (np.abs(E1[0])**2. + np.abs(E2[0])**2.) / drive_I
+        normed_Iy = (np.abs(E1[1])**2. + np.abs(E2[1])**2.) / drive_I
+
+        Px_per_drive_I = np.sum(normed_Ix,axis=-1) / sensor_size**2.
+        Py_per_drive_I = np.sum(normed_Iy,axis=-1) / sensor_size**2.
+        
+
+        angles = np.arctan(Py_per_drive_I**0.5/Px_per_drive_I**0.5)
+        return [angles, Px_per_drive_I, Py_per_drive_I]
+
+
+class FittingTools(object):
+
+    def __init__(self, obs_points=None):
+        """
+        Args:
+            obs_points: 3 element list (in legacy format of eye), 
+            in units of nm.
+
+                obs_points[0]: list of points as rows
+                obs_points[1]: meshed X array
+                obs_points[2]: meshed Y array
+        """
+        if obs_points==None: 
+            self.obs_points = eye
+        else:    
+            self.obs_points = obs_points
+        
+    def twoD_Gaussian(self, 
+        X, ## tuple of meshed (x,y) values
+        amplitude, 
+        xo, 
+        yo, 
+        sigma_x, 
+        sigma_y, 
+        theta, 
+        offset,
+        ):
+
+        xo = float(xo)
+        yo = float(yo)    
+        a = (
+            (np.cos(theta)**2)/(2*sigma_x**2) 
+            +
+            (np.sin(theta)**2)/(2*sigma_y**2)
+            )
+        b = (
+            -(np.sin(2*theta))/(4*sigma_x**2) 
+            + 
+            (np.sin(2*theta))/(4*sigma_y**2)
+            )
+        c = (
+            (np.sin(theta)**2)/(2*sigma_x**2) 
+            + 
+            (np.cos(theta)**2)/(2*sigma_y**2)
+            )
+        g = (
+            offset 
+            + 
+            amplitude*np.exp( - (a*((X[0]-xo)**2) + 2*b*(X[0]-xo)*(X[1]-yo) 
+            + 
+            c*((X[1]-yo)**2)))
+            )
+        return g.ravel()
+
+    def misloc_data_minus_model(
+        self, 
+        fit_params, 
+        *normed_raveled_image_data,
+        ):
+        ''' fit gaussian to data '''
+        gaus = self.twoD_Gaussian(
+            (self.obs_points[1]/nm, self.obs_points[2]/nm),
+            *fit_params ## ( A, xo, yo, sigma_x, sigma_y, theta, offset)
+            )
+        
+        return gaus - normed_raveled_image_data
+
+    def calculate_max_xy(self, images):
+        ## calculate index of maximum in each image. 
+        apparent_centroids_idx = images.argmax(axis=-1)
+        ## define locations for each maximum in physical coordinate system
+
+        x_cen = (self.obs_points[1]/nm).ravel()[apparent_centroids_idx]
+        y_cen = (self.obs_points[2]/nm).ravel()[apparent_centroids_idx]
+
+        return [x_cen,y_cen]
+
+    def calculate_apparent_centroids(self, images):
+        """ calculate index of maximum in each image. """
+        num_of_images = images.shape[0]
+        
+        apparent_centroids_xy = np.zeros((num_of_images,2))
+        
+        max_positions = self.calculate_max_xy(images)
+        
+        for i in np.arange(num_of_images):
+            x0 = max_positions[0][i]
+            y0 = max_positions[1][i]        
+            params0 = (1,x0,y0,100, 100, 0,0)
+            args=tuple(images[i]/np.max(images[i]))
+            fit_gaussian = opt.least_squares(self.misloc_data_minus_model, params0, args=args)
+            resulting_fit_params = fit_gaussian['x']
+            fit_result = self.twoD_Gaussian(
+                (self.obs_points[1]/nm, self.obs_points[2]/nm), ## tuple of meshed (x,y) values
+                *resulting_fit_params
+                )
+            centroid_xy = resulting_fit_params[1:3]
+            apparent_centroids_xy[i] = centroid_xy
+        ## define locations for each maximum in physical coordinate system
+
+        return apparent_centroids_xy.T  ## returns [x_cen(s), y_cen(s)]
+
+    def image_from_E(self, E):
+        drive_I = np.abs(parameters['general']['drive_amp'])**2.
+        
+        normed_I = np.sum(np.abs(E)**2.,axis=0) / drive_I
+
+        return normed_I
+
+class PlottingStuff(object):
+
+    def __init__(self):
+        pass
+
+    def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
+        x1, x2 = mol_x[p], cen_x[p]
+        y1, y2 = mol_y[p], cen_y[p]
+        if ax == None:
+            plt.plot([x1,x2],[y1,y2],'k-', linewidth=.3, zorder=zorder)
+        else: 
+            ax.plot([x1,x2],[y1,y2],'k-', linewidth=.3, zorder=zorder)
+            
+    def scatter_centroids_wLine(self, x_mol_loc, y_mol_loc, appar_cents, ax=None):
+
+    #     trial_images = image_from_E(E)
+    #     appar_cents = calculate_apparent_centroids(trial_images)
+
+        x, y = appar_cents
+        
+        ## This part doesnt work right now
+        el_a = 19
+        el_c = 67
+        quel_a = el_a + 10
+        quel_c = el_c + 10
+        pt_is_in_ellip = np.ones(x.shape, dtype=bool)
+    #     for i in np.arange(x.shape[0]):
+    #         if (x[i]**2./quel_a**2. +  y[i]**2./quel_c**2.) < 1:
+    #             pt_is_in_ellip[i] = False
+        ####
+        
+        x_plot = x[pt_is_in_ellip]
+        y_plot = y[pt_is_in_ellip]
+
+        if ax == None:
+            plt.figure(dpi=300)
+            for i in np.arange(x_plot.shape[0]):
+                self.connectpoints(x_plot, y_plot, x_mol_loc, y_mol_loc, i,zorder=2)
+            
+            plt.scatter(x_plot, y_plot, s=10, c='Red', zorder=3)
+            plt.tight_layout()
+            
+
+        else:
+            for i in np.arange(x_plot.shape[0]):
+                self.connectpoints(
+                    x_plot, y_plot, x_mol_loc, y_mol_loc, i, ax,zorder=2
+                    )
+            ax.scatter(x_plot, y_plot, s=10, c='Red', zorder=3)
+            return ax
+    #     plt.xlim([-2000,2000])
+    #     plt.ylim([-2000,2000])
+
+
+    # In[41]:
+
+    def quiver_plot(self, x_plot, y_plot, angles, plot_limits=[-25,550],
+                   title=r'Apparent pol. per mol. pos.', true_mol_angle=None,
+                   nanorod_angle=0):
+        
+        if true_mol_angle is None: 
+            true_mol_angle = angles
+            
+        el_a = 19
+        el_c = 67
+        fluo_quench_range = 10
+        
+        quel_a = el_a + fluo_quench_range
+        quel_c = el_c + fluo_quench_range
+        pt_is_in_ellip = np.ones(x_plot.shape, dtype=bool)
+    #     for i in np.arange(x_plot.shape[0]):
+    #         if (x_plot[i]**2./quel_a**2. +  y_plot[i]**2./quel_c**2.) < 1:
+    #             pt_is_in_ellip[i] = False
+        
+        x_plot = x_plot[pt_is_in_ellip]
+        y_plot = y_plot[pt_is_in_ellip]
+        angles = angles[pt_is_in_ellip]
+        
+        fig, (ax0, ax_cbar) = plt.subplots(
+            nrows=1,ncols=2, figsize=(3.25,3), dpi=300, 
+            gridspec_kw = {'width_ratios':[6, 0.5]}
+            )
+
+        cmap = mpl.cm.nipy_spectral
+        
+        ## Mark molecule locations
+        scat_tr = ax0.scatter(x_plot, y_plot, s=3, 
+                        color='black',
+        #                    cmap='inferno',
+        #                    clim = [0, np.pi/2], 
+    #                        width=0.005,
+    #                        scale=20,
+                #            scale_units='width',
+    #                        pivot='mid',
+        #                   linewidth=100.,
+    #                       headaxislength=0.0,
+    #                       headlength=0.0
+                          )
+        ## mark true orientation
+        quiv_tr = ax0.quiver(
+            x_plot, y_plot, np.cos(true_mol_angle),np.sin(true_mol_angle), 
+            color='black',
+        #     cmap='inferno',
+        #     clim = [0, np.pi/2], 
+            width=0.005,
+            scale=15,
+              scale_units='width',
+            pivot='mid',
+        #   linewidth=100.,
+            headaxislength=0.0,
+            headlength=0.0
+            )
+        
+        ## Mark apparent orientation
+        quiv_ap = ax0.quiver(x_plot, y_plot, 
+                          np.cos(angles),
+                          np.sin(angles), 
+                          angles,
+                          cmap=cmap,
+                          clim = [0, np.pi/2], 
+                          width=0.01,
+                          scale=12,
+                #            scale_units='width',
+                          pivot='mid',
+                          zorder=4,
+                          headaxislength=2.5,
+                          headlength=2.5,
+                          headwidth=2.5
+                          )
+
+        ax0.axis('equal')
+        ax0.set_xlim(plot_limits)
+        ax0.set_ylim(plot_limits)
+        ax0.set_title(title)
+        ax0.set_xlabel('x [nm]')
+        ax0.set_ylabel('y [nm]')
+
+        norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
+
+        cb1 = mpl.colorbar.ColorbarBase(ax_cbar, cmap=cmap,
+                                        norm=norm,
+                                        orientation='vertical')
+        cb1.set_label(r'observed angle $\phi$')
+    #     plas_dot = ax0.scatter(0,0,color='k',s=30)
+        cb1.set_ticks([0, np.pi/8, np.pi/4, np.pi/8 * 3, np.pi/2])
+        cb1.set_ticklabels(
+            [r'$0$', r'$\pi/8$',r'$\pi/4$',r'$3\pi/8$',r'$\pi/2$']
+            )
+
+    #     fig.tight_layout()
+        
+        quiver_axis_handle = ax0
+        
+        
+        if nanorod_angle == np.pi/2:
+            #### Draw rod
+            circle = mpl.patches.Circle((0, 24), 20, facecolor='Gold',
+                        edgecolor='Black', linewidth=0)
+            bot_circle = mpl.patches.Circle((0, -24), 20, facecolor='Gold',
+                        edgecolor='Black', linewidth=0)
+            rect = mpl.patches.Rectangle(
+                (-20,-24), 40, 48, angle=0.0, facecolor='Gold',
+                edgecolor='Black', linewidth=0)
+
+            ax0.add_patch(circle)
+            ax0.add_patch(rect)
+            ax0.add_patch(bot_circle)
+        
+        ## model ellipsoid
+        ellip = mpl.patches.Ellipse(
+            (0,0), 2*el_c, 2*el_a, angle=nanorod_angle*180/np.pi, 
+            fill=False, edgecolor='Black',linestyle='--')
+        ax0.add_patch(ellip)
+        return [quiver_axis_handle]
+
+    def calculate_mislocalization_magnitude(self, x_cen, y_cen, x_mol, y_mol):
+        misloc = ( (x_cen-x_mol)**2. + (y_cen-y_mol)**2. )**(0.5)
+        return misloc
+
+
+class CoupledDipoles(DipoleProperties, PlottingStuff, FittingTools):
+    
+    ## Q: do I need to manually call 'PlottingStuff.__init__'?
+    def __init__(self, obs_points=None):
+        """
+        DipoleProperties.__init__(): Initialized polarizabilities and maybe 
+            some other stuff
+
+        FittingTools.__init__(obs_points): defines obs points or assigns
+            default
+         """
+        DipoleProperties.__init__(self)
+        FittingTools.__init__(self, obs_points)
+        
+    def mb_p_fields(self, dipole_mag_array, dipole_coordinate_array):
+        ''' As of 081418,fixing: currently only treats dipole at origin.'''    
+        p = dipole_mag_array
+    #     print('Inside mb_p_fields, p= ',p)
+        bfx = dipole_coordinate_array
+
+        v_rel_obs_x_pts = (self.obs_points[1].ravel()[:,None] - bfx.T[0]).T
+        v_rel_obs_y_pts = (self.obs_points[2].ravel()[:,None] - bfx.T[1]).T
+
+        px_fields = np.asarray(
+            afi.E_field(0, v_rel_obs_x_pts, v_rel_obs_y_pts, omega_drive*n_b/c)
+            )
+        py_fields = np.asarray(
+            afi.E_field(
+                np.pi/2, v_rel_obs_x_pts, v_rel_obs_y_pts, omega_drive*n_b/c
+                )
+            )
+        pz_fields = np.zeros(py_fields.shape)
+    #     print('px_fields.shape=',px_fields.shape)
+    #     print('p.shape=',p.shape)
+        ## returns [Ex, Ey, Ez] for dipoles oriented along cart units
+
+        Ex = (
+            p[:,0,None]*px_fields[0] 
+            + 
+            p[:,1,None]*py_fields[0] 
+            + 
+            p[:,2,None]*pz_fields[0]
+            )
+        Ey = (
+            p[:,0,None]*px_fields[1]
+            + 
+            p[:,1,None]*py_fields[1] 
+            + 
+            p[:,2,None]*pz_fields[1]
+            )
+        Ez = (
+            p[:,0,None]*px_fields[2] 
+            + 
+            p[:,1,None]*py_fields[2] 
+            + 
+            p[:,2,None]*pz_fields[2]
+            )
+
+        return np.array([Ex,Ey,Ez])
+
+    def dipole_fields(self, locations, mol_angle=0, plas_angle=np.pi/2):
+        d = locations*nm
+        p0, p1 = cp.dipole_mags_gened(
+            mol_angle, 
+            plas_angle, 
+            d_col=d, 
+            E_d_angle=None,
+            alpha0_diag=self.alpha0_diag_dyad,
+            alpha1_diag=self.alpha1_diag_dyad,
+            )
+        mol_E = self.mb_p_fields(
+            dipole_mag_array=p0, 
+            dipole_coordinate_array=d,
+            ) 
+        plas_E = self.mb_p_fields(
+            dipole_mag_array=p1, 
+            dipole_coordinate_array=np.zeros(d.shape),
+            )
+
+        # p0_unc, = cp.uncoupled_p0(mol_angle=0, d_col=d[0,None], E_d_angle=None)
+        p0_unc, = cp.uncoupled_p0(
+            mol_angle, 
+            E_d_angle=None, 
+            drive_hbar_w=drive_hbar_omega,
+            )
+    #     print('p0.shape = ',p0.shape)
+    #     print('p1.shape = ',p1.shape)
+    #     print('p0_unc.shape = ',p0_unc.shape)
+    #     p0_unc_E = self.mb_p_fields(dipole_mag_array=p0_unc[None,:], dipole_coordinate_array=np.zeros(d[0][None,:].shape))
+        if type(mol_angle)==np.ndarray and mol_angle.shape[0]>1:
+            p0_unc_E = self.mb_p_fields(
+                dipole_mag_array=p0_unc, 
+                dipole_coordinate_array=d
+                )
+        elif (type(mol_angle) == int or
+              type(mol_angle) == float or
+              type(mol_angle) == np.float64 or
+              (type(mol_angle) == np.ndarray and mol_angle.shape[0]==1)
+              ):
+            p0_unc_E = self.mb_p_fields(
+                dipole_mag_array=p0_unc[None,:], 
+                dipole_coordinate_array=d,
+                )
+#         print(type(mol_angle))
+        return [mol_E, plas_E, p0_unc_E, p0, p1]
+
+
+# In[44]:
+
+class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
+    ''' Collect focused+diffracted far-field information from molecules nearby a nanorod '''
+    
+    ## set up inverse mapping from observed -> true angle for signle molecule in the plane. 
+    saved_mapping = np.loadtxt('obs_pol_vs_true_angle.txt')
+    true_ord_angles, obs_ord_angles =  saved_mapping.T
+    #from scipy import interpolate
+    f = interpolate.interp1d(true_ord_angles,obs_ord_angles)
+    f_inv = interpolate.interp1d(
+        obs_ord_angles[:251],
+        true_ord_angles[:251],
+        bounds_error=False,
+        fill_value=(0,np.pi/2)
+        )
+
+        
+    def __init__(
+        self, 
+        locations, 
+        mol_angle=0, 
+        plas_angle=np.pi/2, 
+        obs_points=None,
+        for_fit=False
+        ):
+        
+        CoupledDipoles.__init__(self, obs_points)
+
+        self.mol_locations = locations
+        self.mol_angles = mol_angle
+        self.rod_angle = plas_angle
+        
+        #### Filtering out molecules in region of fluorescence quenching 
+        self.el_a = 19 ## ranorod degenerate radius
+        self.el_c = 67
+        self.quel_a = self.el_a + 10 ## define quenching region
+        self.quel_c = self.el_c + 10
+        self.input_x_mol = locations[:,0]
+        self.input_y_mol = locations[:,1]
+        
+        self.pt_is_in_ellip = self.mol_too_close()
+        ## select molecules outside region,
+        if for_fit==False:
+            self.mol_locations = locations[self.pt_is_in_ellip]
+            ## select molecule angles if listed per molecule, 
+            if type(mol_angle)==np.ndarray and mol_angle.shape[0]>1:
+                self.mol_angles = mol_angle[self.pt_is_in_ellip]
+            else: self.mol_angles = mol_angle
+        else:
+            self.mol_locations = locations
+            self.mol_angles = mol_angle
+
+        (
+            self.mol_E, 
+            self.plas_E, 
+            self.p0_unc_E, 
+            self.p0, 
+            self.p1
+            ) = self.dipole_fields(
+                self.mol_locations, 
+                self.mol_angles, 
+                self.rod_angle
+                )
+        
+        self.trial_images = self.image_from_E(self.mol_E + self.plas_E )
+
+        self.default_plot_limits = [
+            (
+                np.min(self.mol_locations)
+                -
+                (
+                    (
+                        np.max(self.mol_locations)
+                        -
+                        np.min(self.mol_locations))*.1
+                    )
+                ),
+            (
+                np.max(self.mol_locations)
+                +
+                (
+                    (
+                        np.max(self.mol_locations)
+                        -
+                        np.min(self.mol_locations))*.1
+                    )
+                ),
+            ]
+        
+    def calculate_localization(self, save_fields=True):
+        ## should move this to a method, takes too long to initialize class. 
+        self.appar_cents = self.calculate_apparent_centroids(self.trial_images)
+        self.x_cen, self.y_cen = self.appar_cents
+        if save_fields == False:
+            del self.mol_E
+            del self.plas_E
+    
+    def calculate_polarization(self):
+        ## Calculate polarization with beam splitter
+        if hasattr(self, 'mol_E') and hasattr(self, 'plas_E'): 
+            self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
+                self.powers_and_angels(
+                    self.mol_E + self.plas_E
+                    )
+                )
+        elif hasattr(self, 'bem_E'):
+            self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
+                self.powers_and_angels(
+                    np.transpose(self.bem_E, (2,0,1))
+                    )
+                )
+        self.mispol_angle= MolCoupNanoRodExp.f_inv(self.angles)
+
+        
+#     def in_quench_zone(self):
+#         pt_is_in_ellip = np.ones(self.input_x_mol.shape, dtype=bool) ## initialize index array
+#         for i in np.arange(locations[:,0].shape[0]):  
+#             ## currently works only if nanorod is vertically oriented
+#             if (self.input_x_mol[i]**2./self.quel_a**2. +  self.input_y_mol[i]**2./self.quel_c**2.) < 1:
+#                 pt_is_in_ellip[i] = False
+#         return pt_is_in_ellip
+    
+    def mol_too_close(self):
+        '''Returns molecule locations that are outside the fluorescence
+           quenching zone, defined as 10 nm from surface of fit spheroid
+            '''
+        rotated_x = (
+            np.cos(self.rod_angle)*self.input_x_mol 
+            + np.sin(self.rod_angle)*self.input_y_mol
+            )
+        rotated_y = (
+            -np.sin(self.rod_angle)*self.input_x_mol 
+            + np.cos(self.rod_angle)*self.input_y_mol
+            )
+        long_quench_radius = self.quel_c
+        short_quench_radius = self.quel_a
+        rotated_ellip_eq = (
+            rotated_x**2./long_quench_radius**2 
+            + rotated_y**2./short_quench_radius**2
+            )
+        return (rotated_ellip_eq > 1)
+
+    def plot_mispol_map(self, plot_limits=None):
+        if plot_limits == None: plot_limits = self.default_plot_limits
+        if not hasattr(self, 'mispol_angle'):
+            self.calculate_polarization()
+        quiv_ax, = self.quiver_plot(self.mol_locations[:,0], 
+            self.mol_locations[:,1], 
+            self.mispol_angle, 
+            plot_limits,
+            true_mol_angle=self.mol_angles, 
+            nanorod_angle=self.rod_angle, 
+            title=r'Split Pol. and Gau. Fit Loc.',
+            )
+        return quiv_ax
+    
+    def plot_mispol_map_wMisloc(self, plot_limits=None):
+        if not hasattr(self, 'appar_cents'):
+            self.calculate_localization()
+        if plot_limits == None: plot_limits = self.default_plot_limits
+        quiv_ax = self.plot_mispol_map(plot_limits)
+        
+        self.scatter_centroids_wLine(self.mol_locations[:,0], 
+            self.mol_locations[:,1],
+            self.appar_cents, 
+            quiv_ax,
+            )
+        
+    def plot_mislocalization_magnitude_correlation(self):
+        if not hasattr(self, 'appar_cents'):
+            self.calculate_localization()
+        self.misloc_mag = calculate_mislocalization_magnitude(
+            self.x_cen, 
+            self.y_cen, 
+            self.mol_locations[:,0], 
+            self.mol_locations[:,1],
+            )
+    
+        plt.figure(dpi=300)
+        plt.scatter(self.misloc_mag, mispol_angle, s=10, c='Black', zorder=3)
+        plt.tight_layout()
+        plt.xlabel('Magnitude of mislocalization [nm]')
+        plt.ylabel('Apparent angle [deg]')
+        plt.yticks([0,  np.pi/8,  np.pi/4, np.pi/8 *3, np.pi/2],
+                   ['0','22.5','45','57.5','90'])
+
+    def plot_fields(self, ith_molecule):
+        plt.figure(figsize=(3,3),dpi=600)
+        plt.pcolor(eye[1]/nm,eye[2]/nm,(self.trial_images[ith_molecule,:]).reshape(eye[1].shape))
+        plt.colorbar()
+        plt.title(r'$|E|^2/|E_\mathrm{inc}|^2$')
+        plt.xlabel(r'x [nm]')
+        plt.ylabel(r'y [nm]')
+#         plt.quiver(self.mol_locations[ith_molecule, 0], self.mol_locations[ith_molecule, 1],
+#                    np.cos(self.mol_angles[ith_molecule]),np.sin(self.mol_angles[ith_molecule]), 
+#                    color='white',pivot='middle')
+
+
+# ## Fit function for model fields. 
+
+# In[87]:
+
+# MolCoupNanoRodExp(locations, mol_angle=0, plas_angle=np.pi/2, x_obv_grid=eye[1], y_obv_grid=eye[2])
+class FitModelToData(FittingTools,PlottingStuff):
+    ''' Class to contain fitting functions that act on class 'MolCoupNanoRodExp' 
+    as well as variables that are needed by 'MolCoupNanoRodExp' 
+    '''
+    def __init__(self, image_data, obs_points=None):
+        self.mol_angle=0 
+        self.rod_angle=np.pi/2
+        self.image_data=image_data
+
+        FittingTools.__init__(self, obs_points)
+
+    def fit_model_to_image_data(self, images=None):
+        ## calculate index of maximum in each image, going to use this for the initial position guess 
+
+        if images is None: 
+            images = self.image_data
+        num_of_images = images.shape[0]
+        self.model_fit_results = np.zeros((num_of_images,3))
+        max_positions = self.calculate_max_xy(images)
+        for i in np.arange(num_of_images):
+            ## establish initial guesses and stash in 'params0'
+            ini_x = np.round(max_positions[0][i])
+            ini_y = np.round(max_positions[1][i])
+            print(
+                'initial guess for molecule {} location: ({},{})'.format(
+                    i, ini_x, ini_y
+                    )
+                )
+#             ini_x = -50
+#             ini_y = 100
+#             print(ini_x, ini_y)
+            # ini_mol_orientation = self.mol_angle
+            ini_mol_orientation = np.random.random(1)*np.pi*2
+            params0 = (ini_x, ini_y, ini_mol_orientation)
+            a_raveled_normed_image =  images[i]/np.max(images[i])
+            tuple_normed_image_data=tuple(a_raveled_normed_image)
+            optimized_fit = opt.least_squares(
+                self._misloc_data_minus_model, 
+                params0, 
+                args=tuple_normed_image_data,
+                )
+            self.model_fit_results[i] = optimized_fit['x']
+
+        return self.model_fit_results  
+
+    def _misloc_data_minus_model(self, fit_params, *normed_raveled_image_data):
+        ''' fit image model to data.
+        arguments;
+            fit_params = [ini_x, ini_y, ini_mol_orintation]
+                'ini_x' : units of nm from plas position
+                'ini_y' : units of nm from plas position
+                'ini_mol_orintation' : units of radians counter-clock from +x
+        '''
+        
+        raveled_model = self.raveled_model_of_params(fit_params)
+        normed_raveled_model = raveled_model/np.max(raveled_model)
+        
+        return normed_raveled_model - normed_raveled_image_data
+    
+    def raveled_model_of_params(self, fit_params):
+        locations = np.array([[fit_params[0], fit_params[1], 0]])
+        exp_instance = MolCoupNanoRodExp(
+            locations,                                  
+            mol_angle=fit_params[2],                                  
+            plas_angle=self.rod_angle,                                  
+            obs_points=self.obs_points,                                 
+            for_fit=True
+            )
+        raveled_model = exp_instance.trial_images[0].ravel()
+        return raveled_model
+    
+    def plot_image_from_params(self, fit_params, ax=None):
+        raveled_image = self.raveled_model_of_params(fit_params)
+        self.plot_raveled_image(raveled_image,ax)
+#         plt.quiver(self.mol_locations[ith_molecule, 0], self.mol_locations[ith_molecule, 1],
+#                    np.cos(self.mol_angles[ith_molecule]),np.sin(self.mol_angles[ith_molecule]), 
+#                    color='white',pivot='middle')
+
+    def plot_raveled_image(self, image, ax=None):
+        if ax is None:
+            plt.figure(figsize=(3,3),dpi=600)
+            plt.pcolor(
+                self.obs_points[-2]/nm,
+                self.obs_points[-1]/nm,
+                image.reshape(self.obs_points[-2].shape),
+                )
+            plt.colorbar()
+        else:
+            ax.contour(self.obs_points[-2]/nm,
+                self.obs_points[-1]/nm,
+                image.reshape(self.obs_points[-2].shape),
+                cmap='Greys', 
+                linewidths=0.5,
+                )
+        plt.title(r'$|E|^2/|E_\mathrm{inc}|^2$')
+        plt.xlabel(r'x [nm]')
+        plt.ylabel(r'y [nm]')
+        return plt.gca()
+    
+    def plot_fit_results_as_quiver_map(
+        self, 
+        fitted_exp_instance, 
+        plot_limits=None,
+        ):
+        '''...'''
+
+        if not hasattr(self, 'model_fit_results'):
+            self.fit_model_to_image_data()
+        if plot_limits == None: 
+            plot_limits = fitted_exp_instance.default_plot_limits
+
+        quiv_ax, = self.quiver_plot(
+            fitted_exp_instance.mol_locations[:,0], 
+            fitted_exp_instance.mol_locations[:,1], 
+            self.model_fit_results[:,2], 
+            plot_limits, 
+            true_mol_angle=fitted_exp_instance.mol_angles, 
+            nanorod_angle = fitted_exp_instance.rod_angle,
+            title=r'Model Fit Pol. and Loc.',
+            )
+        self.scatter_centroids_wLine(fitted_exp_instance.mol_locations[:,0], 
+                                fitted_exp_instance.mol_locations[:,1],
+                                self.model_fit_results[:,:2].T, quiv_ax)
+        return quiv_ax
+
+    def plot_contour_fit_over_data(self, image_idx):
+            ax = self.plot_raveled_image(self.image_data[image_idx])
+            self.plot_image_from_params(self.model_fit_results[image_idx], ax)
+
+
+class FitModelToNoisedModel(FitModelToData,PlottingStuff):
+    
+    def __init__(self, image_or_expInstance):
+        if type(image_or_expInstance) == np.ndarray:
+            super().__init__(image_or_expInstance)
+        elif type(image_or_expInstance) == MolCoupNanoRodExp:
+            super().__init__(image_or_expInstance.trial_images)
+            self.instance_to_fit = image_or_expInstance
+        
+    def plot_image_noised(self, image, PEAK=1):
+        noised_image_data = self.make_image_noisy(image, PEAK)
+        self.plot_raveled_image(noised_image_data)
+    
+    def plot_image_noised_from_params(self, fit_params, PEAK=1):
+        image = self.raveled_model_of_params(fit_params)
+        self.plot_image_noised(image, PEAK)
+        
+    def make_image_noisy(self, image, PEAK=1):
+        if image.ndim == 2:   ## set of raveled images
+            max_for_norm = image.max(axis=1)[:,None]
+        elif image.ndim == 1:
+            max_for_norm = image.max()
+        normed_image = image/max_for_norm
+        noised_normded_image_data = (
+            np.random.poisson(normed_image/255.0* PEAK) / (PEAK) *255
+            )
+        noised_image_data = noised_normded_image_data*max_for_norm
+        return noised_image_data
+    
+    def make_noisy_image_attr(self, PEAK=1):
+        if hasattr(self, 'noised_image_data'): 
+            return None
+        noised_image_attr = self.make_image_noisy(self.image_data, PEAK)
+        self.noised_image_data = noised_image_attr
+        
+    def fit_model_to_noised_model_image_data(self, PEAK=5000):
+        if not hasattr(self, 'noised_image_data'): 
+            self.make_noisy_image_attr(PEAK)
+        self.model_fit_results = self.fit_model_to_image_data(
+            images=self.noised_image_data)
+        return self.model_fit_results
+    
+#     def plot_fit_results(self):
+    def plot_fit_results_as_quiver_map(
+        self, fitted_exp_instance, plot_limits=None):
+        '''...'''
+        if not hasattr(self, 'model_fit_results'):
+            self.fit_model_to_noised_model_image_data()
+        if plot_limits == None: 
+            plot_limits = fitted_exp_instance.default_plot_limits
+        quiv_ax, = self.quiver_plot(
+            fitted_exp_instance.mol_locations[:,0], 
+            fitted_exp_instance.mol_locations[:,1], 
+            self.model_fit_results[:,2], 
+            plot_limits, 
+            true_mol_angle=fitted_exp_instance.mol_angles, 
+            nanorod_angle = fitted_exp_instance.rod_angle,
+            title=r'Model Fit Pol. and Loc. w/noise',
+            )
+        self.scatter_centroids_wLine(
+            fitted_exp_instance.mol_locations[:,0], 
+            fitted_exp_instance.mol_locations[:,1],
+            self.model_fit_results[:,:2].T, 
+            quiv_ax,
+            )
+        return quiv_ax
+        
+    def plot_contour_fit_over_data(self, image_idx):
+        ax = self.plot_raveled_image(self.noised_image_data[image_idx])
+        self.plot_image_from_params(self.model_fit_results[image_idx], ax)
+
+
+# Testing fits
+
+# In[89]:
+
+def fixed_ori_mol_placement(
+    x_min=0, x_max=350, y_min=0, y_max=350, mol_grid_pts_1D = 10, mol_angle=0):
+    locations = diffi.observation_points(
+        x_min, x_max, y_min, y_max, points=mol_grid_pts_1D
+        )[0]
+    locations = np.hstack((locations,np.zeros((locations.shape[0],1))))
+    
+    mol_linspace_pts = mol_grid_pts_1D
+#     random_mol_angles= (np.random.random(mol_linspace_pts**2)*np.pi*2)
+    return [locations, mol_angle]
+
+def random_ori_mol_placement(
+    x_min=0, x_max=350, y_min=0, y_max=350, mol_grid_pts_1D = 10):
+    locations = diffi.observation_points(
+        x_min, x_max, y_min, y_max, points=mol_grid_pts_1D
+        )[0]
+    locations = np.hstack((locations,np.zeros((locations.shape[0],1))))
+    
+    mol_linspace_pts = mol_grid_pts_1D
+    random_mol_angles_0To360= (np.random.random(mol_linspace_pts**2)*np.pi*2)
+    return [locations, random_mol_angles_0To360]
+
+if __name__ == '__main__':
+    '''This shit is all broken, or at least unmaintained'''
+
+    print('Why hello there.')
