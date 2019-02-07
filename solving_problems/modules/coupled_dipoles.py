@@ -1,8 +1,24 @@
-''' for python 3 '''
+""" for python 3 
+
+02/07/18:
+    Updated to work in new folder structure for git, paths are now hardcoded
+    and will later be set by instalation of Mislocalization package. 
+"""
+# import os
+# import sys
+
+parameter_files_path = ('/Users/chair/Documents/Academia/SuperRes/Biteen_colab/'
+    +
+    'Mispolarization/python/gitted/parameter_files')
+# sys.path.append(parameter_files_path)
+
 import numpy as np 
 import yaml
 
-opened_constant_file = open('../physical_constants.yaml','r')
+phys_const_file_name = '/physical_constants.yaml'
+opened_constant_file = open(
+    parameter_files_path+phys_const_file_name,
+    'r')
 constants = yaml.load(opened_constant_file)
 e = constants['physical_constants']['e']
 c = constants['physical_constants']['c']  # charge of electron in statcoloumbs
@@ -10,12 +26,17 @@ hbar =constants['physical_constants']['hbar']
 nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
-path_to_yaml = '../curly_param.yaml'
-print('reading parameters from {}'.format(path_to_yaml))
+curly_yaml_file_name = '/curly_param.yaml'
+print('reading parameters from {}'.format(
+    parameter_files_path+curly_yaml_file_name
+    )
+)
 
-opened_param_file = open(path_to_yaml,'r')
+opened_param_file = open(
+    parameter_files_path+curly_yaml_file_name,'r'
+    )
 parameters = yaml.load(opened_param_file)
-# print(path_to_yaml)
+# print(curly_yaml_file_name)
 ## System background
 n_b = parameters['general']['background_ref_index']
 eps_b = n_b**2.
