@@ -19,9 +19,7 @@ Patch notes
 02/07/19: 
     Hardcoded parameter file changed to vacuum values fit from BEM spectra with
     built in 
-
-
-"""
+    """
 from __future__ import print_function
 from __future__ import division
 
@@ -40,10 +38,13 @@ project_path = ('/Users/chair/Documents/Academia/SuperRes/Biteen_colab/'
     +
     'Mispolarization/python/gitted'
     )
+
 optics_path = project_path + '/Optics'
+
 sys.path.append(optics_path)
 import diffraction_int as diffi
 import fibonacci as fib
+
 
 
 ## Read parameter file to obtain fields
@@ -57,6 +58,7 @@ print('reading parameters from {}'.format(
     )
 )
 
+
 ## plotting stuff
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -66,6 +68,7 @@ mpl.rcParams["lines.linewidth"]
 
 ## colorbar stuff 
 from mpl_toolkits import axes_grid1
+
 
 ## analytic image fields
 import anal_foc_diff_fields as afi
@@ -82,6 +85,7 @@ phys_const_file_name = '/physical_constants.yaml'
 opened_constant_file = open(
     parameter_files_path+phys_const_file_name,
     'r')
+
 constants = yaml.load(opened_constant_file)
 e = constants['physical_constants']['e']
 c = constants['physical_constants']['c']  # charge of electron in statcoloumbs
@@ -94,7 +98,9 @@ n_a = constants['physical_constants']['nA']   # Avogadro's number
 n_b = parameters['general']['background_ref_index']
 eps_b = n_b**2.
 
+
 # a = parameters['plasmon']['radius']
+
 
 
 
@@ -127,6 +133,7 @@ obj_f = parameters['optics']['obj_f_len']
 tube_f = magnification * obj_f
 
 ## calculate dipole magnitudes
+
 drive_hbar_omega = parameters['general']['drive_energy'] 
     ## rod long mode max at 1.8578957289256757 eV
 omega_drive = drive_hbar_omega/hbar  # driving frequency
@@ -163,7 +170,7 @@ class DipoleProperties(object):
             eps_inf=1, 
             ebs_b=1
             )
-        
+
         self.alpha1_diag_dyad = (
             cp.sparse_ret_prolate_spheroid_polarizability_Drude(
                 omega_drive, *self.fit_result_params
@@ -375,8 +382,10 @@ class PlottingStuff(object):
         if true_mol_angle is None: 
             true_mol_angle = angles
             
+
         el_a = parameters['plasmon']['fit_a1']
         el_c = parameters['plasmon']['fit_a2']
+
         fluo_quench_range = 10
         
         quel_a = el_a + fluo_quench_range
@@ -651,7 +660,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         elif for_fit==True:
             self.mol_locations = locations
             self.mol_angles = mol_angle
-
+        
         ## Automatically calculate fields with coupled dipoles
         (
             self.mol_E, 
@@ -735,8 +744,10 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             -np.sin(self.rod_angle)*self.input_x_mol 
             + np.cos(self.rod_angle)*self.input_y_mol
             )
+
         long_quench_radius = self.quel_a
         short_quench_radius = self.quel_c
+
         rotated_ellip_eq = (
             rotated_x**2./long_quench_radius**2 
             + rotated_y**2./short_quench_radius**2

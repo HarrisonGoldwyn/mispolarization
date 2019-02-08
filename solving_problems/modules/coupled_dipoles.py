@@ -1,5 +1,6 @@
 """ for python 3 
 
+
 02/07/19:
     Updated to work in new folder structure for git, paths are now hardcoded
     and will later be set by instalation of Mislocalization package. 
@@ -26,7 +27,9 @@ hbar =constants['physical_constants']['hbar']
 nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
+
 curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
     )
