@@ -482,7 +482,7 @@ class PlottingStuff(object):
         
         ## model ellipsoid
         ellip = mpl.patches.Ellipse(
-            (0,0), 2*el_c, 2*el_a, angle=nanorod_angle*180/np.pi, 
+            (0,0), 2*el_a, 2*el_c, angle=nanorod_angle*180/np.pi, 
             fill=False, edgecolor='Black',linestyle='--')
         ax0.add_patch(ellip)
         return [quiver_axis_handle]
@@ -648,10 +648,11 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             if type(mol_angle)==np.ndarray and mol_angle.shape[0]>1:
                 self.mol_angles = mol_angle[self.pt_is_in_ellip]
             else: self.mol_angles = mol_angle
-        else:
+        elif for_fit==True:
             self.mol_locations = locations
             self.mol_angles = mol_angle
 
+        ## Automatically calculate fields with coupled dipoles
         (
             self.mol_E, 
             self.plas_E, 
@@ -734,8 +735,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             -np.sin(self.rod_angle)*self.input_x_mol 
             + np.cos(self.rod_angle)*self.input_y_mol
             )
-        long_quench_radius = self.quel_c
-        short_quench_radius = self.quel_a
+        long_quench_radius = self.quel_a
+        short_quench_radius = self.quel_c
         rotated_ellip_eq = (
             rotated_x**2./long_quench_radius**2 
             + rotated_y**2./short_quench_radius**2
