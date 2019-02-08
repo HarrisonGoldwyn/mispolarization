@@ -2,7 +2,7 @@
 
 ## 02/07/19 changed param file to 'curly_nrod_vacuum.yaml'
 
-'''Bash
+```Bash
 chair@D-10-19-28-143:~/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/solving_problems$ grep -rn 'modules/.' -e 'curly'
 modules/./fitting_misLocalization_adding_noise_to_modeled_images__020619.py:40:stream = open('../parameter_files/curly_param.yaml','r')
 modules/./coupled_dipoles.py:29:curly_yaml_file_name = '/curly_param.yaml'
@@ -16,9 +16,12 @@ modules/./fitting_misLocalization_adding_noise_to_modeled_images__011619v11.py:3
 modules/./curly_quiver_plots.py:34:stream = open('../curly_param.yaml','r')
 modules/./spectra.py:14:path_to_yaml = '../curly_param.yaml'
 modules/./fitting_misLocalization.py:49:stream = open('../curly_param.yaml','r')
-'''
+```
 
 next TODO, 
 	- change hardcoded plasmon parameters in 'fitting_misLocalization.py' to parameters reference
 
 ### ^ finished at 8:17 PM
+
+## 02/08/19
+Talked to Curly this morning. Continued to tidy up, merged git repositories that were split for no reason. Reduced prevelance of hard-coded dependencies in the ellipsoid radii. 

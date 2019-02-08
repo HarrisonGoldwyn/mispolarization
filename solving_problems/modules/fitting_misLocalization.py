@@ -18,7 +18,18 @@ Patch notes
 
 02/07/19: 
     Hardcoded parameter file changed to vacuum values fit from BEM spectra with
-    built in 
+    built in.
+
+02/08/19:
+    
+
+----
+TODO
+----
+
+- Want to eliminate hardcoded dependence to .yaml files.
+    - Should load physical constants from scipy, yaml file is pretty useless. 
+
     """
 from __future__ import print_function
 from __future__ import division
@@ -143,11 +154,14 @@ omega_drive = drive_hbar_omega/hbar  # driving frequency
 
 
 class DipoleProperties(object):
-    """"""
+    """ Will eventually call parameter file as argument, currently (02/07/19) 
+        just loads relevant values from hardcoded paths. ew. 
+        """
+
 
     def __init__(self):
 
-        self.fit_result_params = {
+        self.fit_result_params = [
             ## eps_inf, hbar*omega_p, hbar*gamma_nr, eps_b 
             ## (not used as fit param), a_x, a_yz
             parameters['plasmon']['fit_eps_inf'], 
@@ -156,7 +170,9 @@ class DipoleProperties(object):
             eps_b, 
             parameters['plasmon']['fit_a1']*nm, 
             parameters['plasmon']['fit_a2']*nm
-            }
+            ]
+
+        self.fluo_quench_range = 10
 
         self.alpha0_diag_dyad = cp.sparse_polarizability_tensor(
             mass=cp.fluorophore_mass(
@@ -226,6 +242,8 @@ class FittingTools(object):
             self.obs_points = eye
         else:    
             self.obs_points = obs_points
+
+
         
     def twoD_Gaussian(self, 
         X, ## tuple of meshed (x,y) values
@@ -319,10 +337,12 @@ class FittingTools(object):
 
         return normed_I
 
-class PlottingStuff(object):
+class PlottingStuff(DipoleProperties):
 
     def __init__(self):
-        pass
+        ## Establish dipole properties as atributes for reference in plotting
+        ## functions. 
+        DipoleProperties.__init__()   
 
     def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
         x1, x2 = mol_x[p], cen_x[p]
@@ -339,19 +359,19 @@ class PlottingStuff(object):
 
         x, y = appar_cents
         
-        ## This part doesnt work right now
-        el_a = 19
-        el_c = 67
-        quel_a = el_a + 10
-        quel_c = el_c + 10
-        pt_is_in_ellip = np.ones(x.shape, dtype=bool)
-    #     for i in np.arange(x.shape[0]):
-    #         if (x[i]**2./quel_a**2. +  y[i]**2./quel_c**2.) < 1:
-    #             pt_is_in_ellip[i] = False
-        ####
+    #     ## This part doesnt work right now
+    #     el_a = 19
+    #     el_c = 67
+    #     quel_a = el_a + 10
+    #     quel_c = el_c + 10
+    #     pt_is_in_ellip = np.ones(x.shape, dtype=bool)
+    # #     for i in np.arange(x.shape[0]):
+    # #         if (x[i]**2./quel_a**2. +  y[i]**2./quel_c**2.) < 1:
+    # #             pt_is_in_ellip[i] = False
+    #     ####
         
-        x_plot = x[pt_is_in_ellip]
-        y_plot = y[pt_is_in_ellip]
+        x_plot = x
+        y_plot = y
 
         if ax == None:
             plt.figure(dpi=300)
@@ -375,21 +395,27 @@ class PlottingStuff(object):
 
     # In[41]:
 
-    def quiver_plot(self, x_plot, y_plot, angles, plot_limits=[-25,550],
-                   title=r'Apparent pol. per mol. pos.', true_mol_angle=None,
-                   nanorod_angle=0):
+    def quiver_plot(
+        self,
+        x_plot,
+        y_plot,
+        angles,
+        plot_limits=[-25,550],
+        title=r'Apparent pol. per mol. pos.',
+        true_mol_angle=None,
+        nanorod_angle=0, 
+        ):
         
         if true_mol_angle is None: 
             true_mol_angle = angles
             
+        el_a = self.fit_result_params[4]
+        el_c = self.fit_result_params[5]
 
-        el_a = parameters['plasmon']['fit_a1']
-        el_c = parameters['plasmon']['fit_a2']
-
-        fluo_quench_range = 10
+        # self.fluo_quench_range
         
-        quel_a = el_a + fluo_quench_range
-        quel_c = el_c + fluo_quench_range
+        # quel_a = el_a + self.fluo_quench_range
+        # quel_c = el_c + self.fluo_quench_range
         pt_is_in_ellip = np.ones(x_plot.shape, dtype=bool)
     #     for i in np.arange(x_plot.shape[0]):
     #         if (x_plot[i]**2./quel_a**2. +  y_plot[i]**2./quel_c**2.) < 1:
@@ -501,7 +527,7 @@ class PlottingStuff(object):
         return misloc
 
 
-class CoupledDipoles(DipoleProperties, PlottingStuff, FittingTools):
+class CoupledDipoles(PlottingStuff, FittingTools):
     
     ## Q: do I need to manually call 'PlottingStuff.__init__'?
     def __init__(self, obs_points=None):
@@ -642,10 +668,10 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.rod_angle = plas_angle
         
         #### Filtering out molecules in region of fluorescence quenching 
-        self.el_a = 19 ## ranorod degenerate radius
-        self.el_c = 67
-        self.quel_a = self.el_a + 10 ## define quenching region
-        self.quel_c = self.el_c + 10
+        self.el_a = self.fit_result_params[4]
+        self.el_c = self.fit_result_params[5]
+        self.quel_a = self.el_a + self.fluo_quench_range ## define quenching region
+        self.quel_c = self.el_c + self.fluo_quench_range
         self.input_x_mol = locations[:,0]
         self.input_y_mol = locations[:,1]
         
@@ -825,6 +851,8 @@ class FitModelToData(FittingTools,PlottingStuff):
         self.image_data=image_data
 
         FittingTools.__init__(self, obs_points)
+        ## pointer to DipoleProperties.__init__()
+        PlottingStuff.__init__(self)
 
     def fit_model_to_image_data(self, images=None):
         ## calculate index of maximum in each image, going to use this for the initial position guess 
