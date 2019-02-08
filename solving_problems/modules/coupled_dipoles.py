@@ -1,6 +1,6 @@
 """ for python 3 
 
-02/07/18:
+02/07/19:
     Updated to work in new folder structure for git, paths are now hardcoded
     and will later be set by instalation of Mislocalization package. 
 """
@@ -26,7 +26,7 @@ hbar =constants['physical_constants']['hbar']
 nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
-curly_yaml_file_name = '/curly_param.yaml'
+curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
     )
@@ -42,12 +42,12 @@ n_b = parameters['general']['background_ref_index']
 eps_b = n_b**2.
 
 ## Plasmon Drude properties
-hbar_w_p = parameters['plasmon']['plasma_energy']
-drude_damping_energy = parameters['plasmon']['drude_damping_energy']
-eps_inf = parameters['plasmon']['eps_inf']
+# hbar_w_p = parameters['plasmon']['plasma_energy']
+# drude_damping_energy = parameters['plasmon']['drude_damping_energy']
+# eps_inf = parameters['plasmon']['eps_inf']
 
 ## Other plasmon properties
-a = parameters['plasmon']['radius']
+# a = parameters['plasmon']['radius']
 
 ## Driving force
 ficticious_field_amp = parameters['general']['drive_amp'] 
@@ -336,27 +336,29 @@ def dipole_mags_gened(
     d_col, 
     E_d_angle=None, 
     drive_hbar_w=parameters['general']['drive_energy'],
-    alpha0_diag=sparse_polarizability_tensor(
-            mass=fluorophore_mass(
-            ext_coef=parameters['fluorophore']['extinction_coeff'], 
-            gamma=parameters['fluorophore']['mass_gamma']/hbar
-            ), 
-        w_res=parameters['fluorophore']['res_energy']/hbar, 
-        w=parameters['general']['drive_energy']/hbar, 
-        gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
-        a=0, 
-        eps_inf=1, 
-        ebs_b=1
-        ),
-    alpha1_diag=sparse_polarizability_tensor(
-        mass=parameters['plasmon']['fit_mass'], 
-        w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
-        w=parameters['general']['drive_energy']/hbar, 
-        gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
-        a = parameters['plasmon']['radius'], 
-        eps_inf=parameters['plasmon']['eps_inf'], 
-        ebs_b=parameters['general']['background_ref_index']**2.
-        )
+    alpha0_diag=None,
+    alpha1_diag=None,
+    # alpha0_diag=sparse_polarizability_tensor(
+    #     mass=fluorophore_mass(
+    #         ext_coef=parameters['fluorophore']['extinction_coeff'], 
+    #         gamma=parameters['fluorophore']['mass_gamma']/hbar
+    #         ), 
+    #     w_res=parameters['fluorophore']['res_energy']/hbar, 
+    #     w=parameters['general']['drive_energy']/hbar, 
+    #     gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
+    #     a=0, 
+    #     eps_inf=1, 
+    #     ebs_b=1
+    #     ),
+    # alpha1_diag=sparse_polarizability_tensor(
+    #     mass=parameters['plasmon']['fit_mass'], 
+    #     w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
+    #     w=parameters['general']['drive_energy']/hbar, 
+    #     gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
+    #     a = parameters['plasmon']['radius'], 
+    #     eps_inf=parameters['plasmon']['eps_inf'], 
+    #     ebs_b=parameters['general']['background_ref_index']**2.
+    #     )
     ):
 
     phi_0 = mol_angle ## angle of bf_p0
@@ -481,27 +483,29 @@ def dipole_magnitudes(
     d_col, 
     E_d_angle=None, 
     drive_hbar_w=parameters['general']['drive_energy'],
-    alpha0_diag=sparse_polarizability_tensor(
-            mass=fluorophore_mass(
-            ext_coef=parameters['fluorophore']['extinction_coeff'], 
-            gamma=parameters['fluorophore']['mass_gamma']/hbar
-            ), 
-        w_res=parameters['fluorophore']['res_energy']/hbar, 
-        w=parameters['general']['drive_energy']/hbar, 
-        gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
-        a=0, 
-        eps_inf=1, 
-        ebs_b=1
-        ),
-    alpha1_diag=sparse_polarizability_tensor(
-        mass=parameters['plasmon']['fit_mass'], 
-        w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
-        w=parameters['general']['drive_energy']/hbar, 
-        gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
-        a = parameters['plasmon']['radius'], 
-        eps_inf=parameters['plasmon']['eps_inf'], 
-        ebs_b=parameters['general']['background_ref_index']**2.
-        )
+    alpha0_diag=None,
+    alpha1_diag=None,
+    # alpha0_diag=sparse_polarizability_tensor(
+    #         mass=fluorophore_mass(
+    #         ext_coef=parameters['fluorophore']['extinction_coeff'], 
+    #         gamma=parameters['fluorophore']['mass_gamma']/hbar
+    #         ), 
+    #     w_res=parameters['fluorophore']['res_energy']/hbar, 
+    #     w=parameters['general']['drive_energy']/hbar, 
+    #     gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
+    #     a=0, 
+    #     eps_inf=1, 
+    #     ebs_b=1
+    #     ),
+    # alpha1_diag=sparse_polarizability_tensor(
+    #     mass=parameters['plasmon']['fit_mass'], 
+    #     w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
+    #     w=parameters['general']['drive_energy']/hbar, 
+    #     gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
+    #     a = parameters['plasmon']['radius'], 
+    #     eps_inf=parameters['plasmon']['eps_inf'], 
+    #     ebs_b=parameters['general']['background_ref_index']**2.
+    #     )
     ):
 
     phi_0 = mol_angle ## angle of bf_p0
@@ -575,43 +579,43 @@ def uncoupled_p0(mol_angle, E_d_angle=None,
 
     return [p0_unc]
 
-def uncoupled_p1(plas_angle, E_d_angle=None,
-    drive_hbar_w=parameters['general']['drive_energy']
-    ):
+# def uncoupled_p1(plas_angle, E_d_angle=None,
+#     drive_hbar_w=parameters['general']['drive_energy']
+#     ):
 
-    # drive_hbar_w = parameters['general']['drive_energy']
-    w = drive_hbar_w/hbar
-    # w_res = w
-    # gamma_nr = drude_damping_energy/hbar
-    # eps_inf = 
-    n_b = parameters['general']['background_ref_index']
-    eps_b = n_b**2.
+#     # drive_hbar_w = parameters['general']['drive_energy']
+#     w = drive_hbar_w/hbar
+#     # w_res = w
+#     # gamma_nr = drude_damping_energy/hbar
+#     # eps_inf = 
+#     n_b = parameters['general']['background_ref_index']
+#     eps_b = n_b**2.
 
-    # phi_0 = mol_angle ## angle of bf_p0
-    # p0_hat = rotation_by(phi_0) @ np.array([1,0,0])
+#     # phi_0 = mol_angle ## angle of bf_p0
+#     # p0_hat = rotation_by(phi_0) @ np.array([1,0,0])
     
-    phi_1 = plas_angle ## angle of bf_p1
-    p1_hat = rotation_by(phi_1) @ np.array([1,0,0])
+#     phi_1 = plas_angle ## angle of bf_p1
+#     p1_hat = rotation_by(phi_1) @ np.array([1,0,0])
     
-    # phi_d = sep_angle ## angle of bf_d
+#     # phi_d = sep_angle ## angle of bf_d
 
-    if E_d_angle == None: 
-        E_d_angle = plas_angle
-    E_drive = rotation_by(E_d_angle) @ np.array([1,0,0])*ficticious_field_amp
+#     if E_d_angle == None: 
+#         E_d_angle = plas_angle
+#     E_drive = rotation_by(E_d_angle) @ np.array([1,0,0])*ficticious_field_amp
     
-    alpha_1_p1 = sparse_polarizability_tensor(
-        mass=parameters['plasmon']['fit_mass'], 
-        w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
-        w=w, 
-        gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
-        a = parameters['plasmon']['radius'], 
-        eps_inf=parameters['plasmon']['eps_inf'], 
-        ebs_b=eps_b)
-    alpha_1 = rotation_by(-phi_1) @ alpha_1_p1 @ rotation_by(phi_1)
+#     alpha_1_p1 = sparse_polarizability_tensor(
+#         mass=parameters['plasmon']['fit_mass'], 
+#         w_res=parameters['plasmon']['fit_hbar_w0']/hbar, 
+#         w=w, 
+#         gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar, 
+#         a = parameters['plasmon']['radius'], 
+#         eps_inf=parameters['plasmon']['eps_inf'], 
+#         ebs_b=eps_b)
+#     alpha_1 = rotation_by(-phi_1) @ alpha_1_p1 @ rotation_by(phi_1)
 
-    p1_unc = np.einsum('...ij,...j->...i',alpha_1, E_drive)
+#     p1_unc = np.einsum('...ij,...j->...i',alpha_1, E_drive)
 
-    return [p1_unc]
+#     return [p1_unc]
 
 
 if __name__ == "__main__":

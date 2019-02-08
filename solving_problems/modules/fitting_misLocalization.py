@@ -16,6 +16,11 @@ Patch notes
     Currently hardcoded for a certain parameter file and fit parameters. This 
     will be changed in the future, but for now I just want to get stuff done. 
 
+02/07/19: 
+    Hardcoded parameter file changed to vacuum values fit from BEM spectra with
+    built in 
+
+
 """
 from __future__ import print_function
 from __future__ import division
@@ -35,52 +40,48 @@ project_path = ('/Users/chair/Documents/Academia/SuperRes/Biteen_colab/'
     +
     'Mispolarization/python/gitted'
     )
-optics_path = project_path + 'Optics'
+optics_path = project_path + '/Optics'
 sys.path.append(optics_path)
 import diffraction_int as diffi
 import fibonacci as fib
 
 
-## Import field functions
-# field_module_folder = os.path.join(date_dir, 'field_functions')             
-# sys.path.append(field_module_folder)
-# import far_fields as fi
 ## Read parameter file to obtain fields
-stream = open('../curly_param.yaml','r')
-parameters = yaml.load(stream)
+parameter_files_path = (
+    project_path + '/parameter_files')
 
+curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+parameters = yaml.load(open(parameter_files_path+curly_yaml_file_name, 'r'))
+print('reading parameters from {}'.format(
+    parameter_files_path+curly_yaml_file_name
+    )
+)
 
 ## plotting stuff
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-get_ipython().magic('matplotlib inline')
-# mpl.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-## for Palatino and other serif fonts use:
-#rc('font',**{'family':'serif','serif':['Palatino']})
+
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams["lines.linewidth"]
 
 ## colorbar stuff 
 from mpl_toolkits import axes_grid1
 
-# import eqm_slns as osc
-
-## analytic image functions
-# import analytic_intensity_functions_xyz as imf
-
-## dipole moments as functions of separation, not pulled from param file
-# import p_of_d_genOr as pod
-
-# pretty fitting
-# import lmfit as lf
-
+## analytic image fields
 import anal_foc_diff_fields as afi
 
+## solution to coupled dipole problem
+modules_path = project_path + '/solving_problems/modules'
+sys.path.append(modules_path)
 import coupled_dipoles as cp 
 
+txt_file_path = project_path + '/solving_problems/txt_files'
+
 ## Import physical constants
-full_path_to_constant_yaml = os.path.join(date_dir,'physical_constants.yaml')
-opened_constant_file = open(full_path_to_constant_yaml,'r')
+phys_const_file_name = '/physical_constants.yaml'
+opened_constant_file = open(
+    parameter_files_path+phys_const_file_name,
+    'r')
 constants = yaml.load(opened_constant_file)
 e = constants['physical_constants']['e']
 c = constants['physical_constants']['c']  # charge of electron in statcoloumbs
@@ -93,7 +94,7 @@ n_a = constants['physical_constants']['nA']   # Avogadro's number
 n_b = parameters['general']['background_ref_index']
 eps_b = n_b**2.
 
-a = parameters['plasmon']['radius']
+# a = parameters['plasmon']['radius']
 
 
 
@@ -126,7 +127,8 @@ obj_f = parameters['optics']['obj_f_len']
 tube_f = magnification * obj_f
 
 ## calculate dipole magnitudes
-drive_hbar_omega = parameters['general']['drive_energy'] ## rod long mode max at 1.8578957289256757 eV
+drive_hbar_omega = parameters['general']['drive_energy'] 
+    ## rod long mode max at 1.8578957289256757 eV
 omega_drive = drive_hbar_omega/hbar  # driving frequency
 
 
@@ -138,16 +140,17 @@ class DipoleProperties(object):
 
     def __init__(self):
 
-        self.fit_result_params = (
+        self.fit_result_params = {
             ## eps_inf, hbar*omega_p, hbar*gamma_nr, eps_b 
             ## (not used as fit param), a_x, a_yz
-            15.100176, 
-            10.15232758/hbar, 
-            0.10316881/hbar, 
-            1.0, 
-            67.24906658*nm, 
-            19.20816015*nm
-            )
+            parameters['plasmon']['fit_eps_inf'], 
+            parameters['plasmon']['fit_hbar_wp']/hbar, 
+            parameters['plasmon']['fit_hbar_gamma']/hbar, 
+            eps_b, 
+            parameters['plasmon']['fit_a1']*nm, 
+            parameters['plasmon']['fit_a2']*nm
+            }
+
         self.alpha0_diag_dyad = cp.sparse_polarizability_tensor(
             mass=cp.fluorophore_mass(
                 ext_coef=parameters['fluorophore']['extinction_coeff'], 
@@ -160,6 +163,7 @@ class DipoleProperties(object):
             eps_inf=1, 
             ebs_b=1
             )
+        
         self.alpha1_diag_dyad = (
             cp.sparse_ret_prolate_spheroid_polarizability_Drude(
                 omega_drive, *self.fit_result_params
@@ -371,8 +375,8 @@ class PlottingStuff(object):
         if true_mol_angle is None: 
             true_mol_angle = angles
             
-        el_a = 19
-        el_c = 67
+        el_a = parameters['plasmon']['fit_a1']
+        el_c = parameters['plasmon']['fit_a2']
         fluo_quench_range = 10
         
         quel_a = el_a + fluo_quench_range
@@ -601,7 +605,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
     ''' Collect focused+diffracted far-field information from molecules nearby a nanorod '''
     
     ## set up inverse mapping from observed -> true angle for signle molecule in the plane. 
-    saved_mapping = np.loadtxt('obs_pol_vs_true_angle.txt')
+    saved_mapping = np.loadtxt(txt_file_path+'/obs_pol_vs_true_angle.txt')
     true_ord_angles, obs_ord_angles =  saved_mapping.T
     #from scipy import interpolate
     f = interpolate.interp1d(true_ord_angles,obs_ord_angles)

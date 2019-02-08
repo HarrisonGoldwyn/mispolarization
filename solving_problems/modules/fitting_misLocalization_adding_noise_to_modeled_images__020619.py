@@ -37,7 +37,7 @@ import fibonacci as fib
 # sys.path.append(field_module_folder)
 # import far_fields as fi
 ## Read parameter file to obtain fields
-stream = open('../curly_param.yaml','r')
+stream = open('../parameter_files/curly_param.yaml','r')
 parameters = yaml.load(stream)
 
 

@@ -28,20 +28,29 @@ optics:
   sensor_size: 2000
   sensor_pts: 100
 plasmon:
-  drude_damping_energy: 0.066
-  eps_inf: 10
-  fit_hbar_gamma: 0.06778709544892923
-  fit_hbar_w0: 1.857
+  ## updated 02/07/18 to match fit parameters of single trans peak in vacuum
+  # drude_damping_energy: 0.066
+  fit_eps_inf: 11.59368546222604
+  fit_hbar_gamma: 0.06807552707927589
+  # fit_hbar_w0: 1.857
   fit_eps_inf: 12.42358064082486
-  fit_hbar_wp: 9.896193581047589
-  fit_a1: 48.558393197333274
-  fit_a2: 19.931635421512183
+  fit_hbar_wp: 9.654134218876475
+  fit_a1: 48.04291550400768
+  fit_a2: 19.93376247952056
   # fit_hbar_w2: 2.661
   # fit_l2_hbar_gamma: 0.06327
   # fit_l2_mass: 4.778
-  fit_mass: 5.161e-34
+  # fit_mass: 5.161e-34
   # include_quadrupole: false
   # incorperate_parameters_from_fit: true
-  plasma_energy: 9.0705
+  # plasma_energy: 9.0705
   # pos_unit_vec: [-1.0, 0.0, 0.0]
-  radius: 0.0e-06
+  # radius: 0.0e-06
+
+## vacuum fit parameters 02/07/18 from BEM Drude 
+## assuming single trans peak
+  # 'eps_inf': 11.59368546222604,
+  # 'hbarw_p': 9.654134218876475,
+  # 'hbargamma': 0.06807552707927589,
+  # 'a_1': 48.04291550400768,
+  # 'a_2': 19.93376247952056
