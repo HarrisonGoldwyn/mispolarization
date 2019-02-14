@@ -6,20 +6,20 @@ fluorophore:
   pos_unit_vec: [1.0, 0.0, 0.0]
   res_energy: 2.18
   test_gamma: 0.075
-spectra:
-  min_energy: 1.0
-  max_energy: 3.0
-  energy_step_size: 0.05
+# spectra:
+  # min_energy: 1.0
+  # max_energy: 3.0
+  # energy_step_size: 0.05
 general:
   background_ref_index: 1.0
   coupling: ff
   dipole_orientation: [1.0, 0.0, 0.0]
   drive_amp: 30.0
   drive_energy: 2.18
-  fields: far
-  max_sep: 2.51e-05
-  min_sep: 200.0e-07
-  sep_step_size: 10.0e-07
+  # fields: far
+  # max_sep: 2.51e-05
+  # min_sep: 200.0e-07
+  # sep_step_size: 10.0e-07
 optics:
   lens_points: 1000 
   magnification: 1.0 

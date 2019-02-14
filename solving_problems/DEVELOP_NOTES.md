@@ -25,3 +25,16 @@ next TODO,
 
 ## 02/08/19
 Talked to Curly this morning. Continued to tidy up, merged git repositories that were split for no reason. Reduced prevelance of hard-coded dependencies in the ellipsoid radii. 
+
+## 02/13/19
+Back in the office after some snow days. 
+- in `fitting_misLocalization.py`;
+	- in `fitting_misLocalization.py`, changed the confusingly named variable `	nm` to `m_per_nm`
+	- fixed units on the ellipse radii, which __fixed drawing of the ellipse in quiver plots__.
+	- added documentation to `class FitModelToData`
+
+### 10:49 AM
+Model not doing any better than gaussian for localization in BEM images. Something is wrong, results look very similar to Gaussian mislocalization. Even symmetry axis studied in mislocalization paper look bad. Fits should work here. 
+
+TODO: 
+	- in `fit_localization_from_BEM_fields.ipynb`, Should figure out why I am getting complex casting to real errors in 

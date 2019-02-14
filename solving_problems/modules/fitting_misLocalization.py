@@ -101,7 +101,7 @@ constants = yaml.load(opened_constant_file)
 e = constants['physical_constants']['e']
 c = constants['physical_constants']['c']  # charge of electron in statcoloumbs
 hbar =constants['physical_constants']['hbar']
-nm = constants['physical_constants']['nm']
+m_per_nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']   # Avogadro's number
 # Z_o = 376.7303 # impedence of free space in ohms (SI)
 
@@ -117,7 +117,7 @@ eps_b = n_b**2.
 
 #######################################################################
 ## Optics stuff.  
-sensor_size = parameters['optics']['sensor_size']*nm
+sensor_size = parameters['optics']['sensor_size']*m_per_nm
 # height = 2*mm  # also defines objective lens focal length 
 # height = parameters['optics']['obj_f_len']
 resolution = parameters['optics']['sensor_pts']  # image grid resolution
@@ -168,8 +168,8 @@ class DipoleProperties(object):
             parameters['plasmon']['fit_hbar_wp']/hbar, 
             parameters['plasmon']['fit_hbar_gamma']/hbar, 
             eps_b, 
-            parameters['plasmon']['fit_a1']*nm, 
-            parameters['plasmon']['fit_a2']*nm
+            parameters['plasmon']['fit_a1']*m_per_nm, 
+            parameters['plasmon']['fit_a2']*m_per_nm
             ]
 
         self.fluo_quench_range = 10
@@ -289,7 +289,7 @@ class FittingTools(object):
         ):
         ''' fit gaussian to data '''
         gaus = self.twoD_Gaussian(
-            (self.obs_points[1]/nm, self.obs_points[2]/nm),
+            (self.obs_points[1]/m_per_nm, self.obs_points[2]/m_per_nm),
             *fit_params ## ( A, xo, yo, sigma_x, sigma_y, theta, offset)
             )
         
@@ -300,8 +300,8 @@ class FittingTools(object):
         apparent_centroids_idx = images.argmax(axis=-1)
         ## define locations for each maximum in physical coordinate system
 
-        x_cen = (self.obs_points[1]/nm).ravel()[apparent_centroids_idx]
-        y_cen = (self.obs_points[2]/nm).ravel()[apparent_centroids_idx]
+        x_cen = (self.obs_points[1]/m_per_nm).ravel()[apparent_centroids_idx]
+        y_cen = (self.obs_points[2]/m_per_nm).ravel()[apparent_centroids_idx]
 
         return [x_cen,y_cen]
 
@@ -321,7 +321,7 @@ class FittingTools(object):
             fit_gaussian = opt.least_squares(self.misloc_data_minus_model, params0, args=args)
             resulting_fit_params = fit_gaussian['x']
             fit_result = self.twoD_Gaussian(
-                (self.obs_points[1]/nm, self.obs_points[2]/nm), ## tuple of meshed (x,y) values
+                (self.obs_points[1]/m_per_nm, self.obs_points[2]/m_per_nm), ## tuple of meshed (x,y) values
                 *resulting_fit_params
                 )
             centroid_xy = resulting_fit_params[1:3]
@@ -342,7 +342,7 @@ class PlottingStuff(DipoleProperties):
     def __init__(self):
         ## Establish dipole properties as atributes for reference in plotting
         ## functions. 
-        DipoleProperties.__init__()   
+        DipoleProperties.__init__(self)   
 
     def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
         x1, x2 = mol_x[p], cen_x[p]
@@ -360,7 +360,7 @@ class PlottingStuff(DipoleProperties):
         x, y = appar_cents
         
     #     ## This part doesnt work right now
-    #     el_a = 19
+    #     el_a = 19 
     #     el_c = 67
     #     quel_a = el_a + 10
     #     quel_c = el_c + 10
@@ -409,8 +409,8 @@ class PlottingStuff(DipoleProperties):
         if true_mol_angle is None: 
             true_mol_angle = angles
             
-        el_a = self.fit_result_params[4]
-        el_c = self.fit_result_params[5]
+        self.el_a = self.fit_result_params[4] / m_per_nm 
+        self.el_c = self.fit_result_params[5] / m_per_nm
 
         # self.fluo_quench_range
         
@@ -517,7 +517,7 @@ class PlottingStuff(DipoleProperties):
         
         ## model ellipsoid
         ellip = mpl.patches.Ellipse(
-            (0,0), 2*el_a, 2*el_c, angle=nanorod_angle*180/np.pi, 
+            (0,0), 2*self.el_a, 2*self.el_c, angle=nanorod_angle*180/np.pi, 
             fill=False, edgecolor='Black',linestyle='--')
         ax0.add_patch(ellip)
         return [quiver_axis_handle]
@@ -588,7 +588,7 @@ class CoupledDipoles(PlottingStuff, FittingTools):
         return np.array([Ex,Ey,Ez])
 
     def dipole_fields(self, locations, mol_angle=0, plas_angle=np.pi/2):
-        d = locations*nm
+        d = locations*m_per_nm
         p0, p1 = cp.dipole_mags_gened(
             mol_angle, 
             plas_angle, 
@@ -668,8 +668,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.rod_angle = plas_angle
         
         #### Filtering out molecules in region of fluorescence quenching 
-        self.el_a = self.fit_result_params[4]
-        self.el_c = self.fit_result_params[5]
+        self.el_a = self.fit_result_params[4] / m_per_nm 
+        self.el_c = self.fit_result_params[5] / m_per_nm
         self.quel_a = self.el_a + self.fluo_quench_range ## define quenching region
         self.quel_c = self.el_c + self.fluo_quench_range
         self.input_x_mol = locations[:,0]
@@ -771,7 +771,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             + np.cos(self.rod_angle)*self.input_y_mol
             )
 
-        long_quench_radius = self.quel_a
+        long_quench_radius = self.quel_a  
         short_quench_radius = self.quel_c
 
         rotated_ellip_eq = (
@@ -826,7 +826,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
 
     def plot_fields(self, ith_molecule):
         plt.figure(figsize=(3,3),dpi=600)
-        plt.pcolor(eye[1]/nm,eye[2]/nm,(self.trial_images[ith_molecule,:]).reshape(eye[1].shape))
+        plt.pcolor(eye[1]/m_per_nm,eye[2]/m_per_nm,(self.trial_images[ith_molecule,:]).reshape(eye[1].shape))
         plt.colorbar()
         plt.title(r'$|E|^2/|E_\mathrm{inc}|^2$')
         plt.xlabel(r'x [nm]')
@@ -845,46 +845,63 @@ class FitModelToData(FittingTools,PlottingStuff):
     ''' Class to contain fitting functions that act on class 'MolCoupNanoRodExp' 
     as well as variables that are needed by 'MolCoupNanoRodExp' 
     '''
-    def __init__(self, image_data, obs_points=None):
+    def __init__(self, image_data, obs_points=None, ini_guess=None):
         self.mol_angle=0 
         self.rod_angle=np.pi/2
         self.image_data=image_data
+
+        self.ini_guess = ini_guess
 
         FittingTools.__init__(self, obs_points)
         ## pointer to DipoleProperties.__init__()
         PlottingStuff.__init__(self)
 
     def fit_model_to_image_data(self, images=None):
-        ## calculate index of maximum in each image, going to use this for the initial position guess 
+        ## calculate index of maximum in each image, 
+        ## going to use this for the initial position guess 
 
         if images is None: 
             images = self.image_data
+        ## initialize array to hold fit results for arbitrary number of images
         num_of_images = images.shape[0]
         self.model_fit_results = np.zeros((num_of_images,3))
+        ## Use positions of max intensity as initial guess for molecule 
+        ## position.
         max_positions = self.calculate_max_xy(images)
+        
+        ## Loop through images and fit. 
         for i in np.arange(num_of_images):
-            ## establish initial guesses and stash in 'params0'
-            ini_x = np.round(max_positions[0][i])
-            ini_y = np.round(max_positions[1][i])
+            ## Establish initial guesses for molecules
+            if self.ini_guess is None:
+                ini_x = np.round(max_positions[0][i])
+                ini_y = np.round(max_positions[1][i])
+            else:
+                ini_x = np.round(self.ini_guess[i, 0])
+                ini_y = np.round(self.ini_guess[i, 1])
             print(
                 'initial guess for molecule {} location: ({},{})'.format(
                     i, ini_x, ini_y
                     )
                 )
-#             ini_x = -50
-#             ini_y = 100
-#             print(ini_x, ini_y)
-            # ini_mol_orientation = self.mol_angle
-            ini_mol_orientation = np.random.random(1)*np.pi*2
+            ## Randomize initial molecule oriantation, maybe do something 
+            ## smarter later.
+            ini_mol_orientation = np.random.random(1)*np.pi/2
             params0 = (ini_x, ini_y, ini_mol_orientation)
+
+            ## Normalize images for fitting. 
             a_raveled_normed_image =  images[i]/np.max(images[i])
+            
+            ## Place image in tuple as required by `opt.least_squares`.
             tuple_normed_image_data=tuple(a_raveled_normed_image)
+            
+            ## Run fit.
             optimized_fit = opt.least_squares(
-                self._misloc_data_minus_model, 
-                params0, 
-                args=tuple_normed_image_data,
+                self._misloc_data_minus_model, ## residual 
+                params0, ## initial guesses
+                args=tuple_normed_image_data, ## data to fit
                 )
-            self.model_fit_results[i] = optimized_fit['x']
+            ## Store fit result parameters as class instance attribute.
+            self.model_fit_results[i] = optimized_fit['x'] 
 
         return self.model_fit_results  
 
@@ -925,14 +942,14 @@ class FitModelToData(FittingTools,PlottingStuff):
         if ax is None:
             plt.figure(figsize=(3,3),dpi=600)
             plt.pcolor(
-                self.obs_points[-2]/nm,
-                self.obs_points[-1]/nm,
+                self.obs_points[-2]/m_per_nm,
+                self.obs_points[-1]/m_per_nm,
                 image.reshape(self.obs_points[-2].shape),
                 )
             plt.colorbar()
         else:
-            ax.contour(self.obs_points[-2]/nm,
-                self.obs_points[-1]/nm,
+            ax.contour(self.obs_points[-2]/m_per_nm,
+                self.obs_points[-1]/m_per_nm,
                 image.reshape(self.obs_points[-2].shape),
                 cmap='Greys', 
                 linewidths=0.5,
@@ -1072,6 +1089,6 @@ def random_ori_mol_placement(
     return [locations, random_mol_angles_0To360]
 
 if __name__ == '__main__':
-    '''This shit is all broken, or at least unmaintained'''
+    '''This shit is all broken, or at least um_per_nmaintained'''
 
     print('Why hello there.')
