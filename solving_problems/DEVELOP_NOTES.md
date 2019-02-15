@@ -38,3 +38,6 @@ Model not doing any better than gaussian for localization in BEM images. Somethi
 
 TODO: 
 	- in `fit_localization_from_BEM_fields.ipynb`, Should figure out why I am getting complex casting to real errors in 
+
+## 02/14/19
+Might have just fixed the bug! had duplicates of eps_inf in `curly_nrod_vacuum.yaml`.
