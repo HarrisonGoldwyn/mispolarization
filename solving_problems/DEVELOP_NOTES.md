@@ -41,3 +41,56 @@ TODO:
 
 ## 02/14/19
 Might have just fixed the bug! had duplicates of eps_inf in `curly_nrod_vacuum.yaml`.
+
+## 02/20/19: Moving back to water
+First thing I want to do is change param file back to a default name to avoid confusion. 
+
+This is going to involve grepping 
+```Bash
+chair@Harrisons-MacBook:~/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted$ grep -rn 'solving_problems/.' -e 'curly_nrod_vacuum'
+solving_problems/./DEVELOP_NOTES.md:3:## 02/07/19 changed param file to 'curly_nrod_vacuum.yaml'
+solving_problems/./DEVELOP_NOTES.md:43:Might have just fixed the bug! had duplicates of eps_inf in `curly_nrod_vacuum.yaml`.
+solving_problems/./modules/coupled_dipoles.py:31:curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+Binary file solving_problems/./modules/__pycache__/coupled_dipoles.cpython-36.pyc matches
+Binary file solving_problems/./modules/__pycache__/fitting_misLocalization.cpython-36.pyc matches
+solving_problems/./modules/fitting_misLocalization.py:65:curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+solving_problems/./notebooks/fit_localization_from_BEM_fields.ipynb:24:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/fit_localization_from_BEM_fields.ipynb:25:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/fit_localization_from_BEM_fields.ipynb:63:    "curly_yaml_file_name = '/curly_nrod_vacuum.yaml'\n",
+solving_problems/./notebooks/fit_ellipsoid_parameters_from_spectra.ipynb:199:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields-checkpoint.ipynb:24:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields-checkpoint.ipynb:25:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields-checkpoint.ipynb:63:    "curly_yaml_file_name = '/curly_nrod_vacuum.yaml'\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_ellipsoid_parameters_from_spectra-checkpoint.ipynb:199:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields__true_pos_ini_model_guess-checkpoint.ipynb:24:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields__true_pos_ini_model_guess-checkpoint.ipynb:25:      "reading parameters from /Users/chair/Documents/Academia/SuperRes/Biteen_colab/Mispolarization/python/gitted/parameter_files/curly_nrod_vacuum.yaml\n",
+solving_problems/./notebooks/.ipynb_checkpoints/fit_localization_from_BEM_fields__true_pos_ini_model_guess-checkpoint.ipynb:63:    "curly_yaml_file_name = '/curly_nrod_vacuum.yaml'\n",
+solving_problems/./notebooks/BEM_fit_nanrod_in_vacuum__012419.ipynb:43:    "stream = open('../curly_nrod_vacuum.yaml','r')\n",
+```
+So the files to find and replace are 
+- modules/coupled_dipoles.py
+- modules/fitting_misLocalization.py
+- notebooks/fit_localization_from_BEM_fields.ipynb
+and maybe 
+- fit_ellipsoid_parameters_from_spectra.ipynb
+
+But before I go about changing any of that, I need to find a spectra of the rod in water and try and fit it. 
+
+Found the file `~/Documents/MATLAB/102418/curly_rod_spectra_JC_epsb1p778.mat`, will try loading and fitting that.
+
+Resultsing fit parameters without changing anything but the sprectra file are:
+
+	old: array([15.74962612, 10.02510511,  0.10268783, 67.16871096, 20.79635188])
+	new: array([15.74962612, 10.02510511,  0.10268783, 67.16871096, 20.79635188])
+
+Nothing changed. Let me look back at `coupled_dipoles.py` and see what's up.
+
+### 12:26 PM
+`eps_b` was being called directly in `fit_ellipsoid_parameters_from_spectra_in_water.ipynb` but thats fixed now. More reasonable parameters except for eps_inf:
+	array([31.72908818, 14.21215911,  0.08327776, 55.42533033, 16.72842459])
+Not sure what that is about. `coupled_dipoles.py` seems clean now, all `k`'s are now `= w*n/c`. 
+
+Might have to look in MNPBEM and see how they calculate the scattered power with a dielectric background. I'll do that after lunch. 
+- if that doesnt work I'll rerun the spectra (with Drude) just to be sure.
+
+

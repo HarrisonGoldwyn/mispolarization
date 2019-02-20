@@ -28,7 +28,7 @@ nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
 
-curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+curly_yaml_file_name = '/curly_nrod_water.yaml'
 
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
@@ -280,13 +280,15 @@ def long_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
     alpha = sparse_ret_prolate_spheroid_polarizability_Drude(
         w, eps_inf, w_p, gamma, eps_b, a_x, a_yz)
 
-    sigma = (8*np.pi/3)*(w/c)**4.*np.sqrt(eps_b)**(-1)*(
+    ## result I had as of 02/19/19, don't remember justification
+    # sigma = (8*np.pi/3)*(w/c)**4.*np.sqrt(eps_b)**(-1)*(
+    #     np.abs(alpha[0,0])**2. 
+    #     )
+
+    ## simple fix, changing k -> w*n/c
+    sigma = (8*np.pi/3)*(w * np.sqrt(eps_b) / c)**4. * (
         np.abs(alpha[0,0])**2. 
-        # + np.abs(alpha[1,1])**2.
         )
-    # print('(8*np.pi/3)*(w/c)**4. = ',(8*np.pi/3)*(w/c)**4. )
-    # print('(np.abs(alpha[0,0])**2. + np.abs(alpha[1,1])**2.) = ',
-        # (np.abs(alpha[0,0])**2. + np.abs(alpha[1,1])**2.))
     return sigma
 
 def short_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
@@ -295,9 +297,13 @@ def short_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
     alpha = sparse_ret_prolate_spheroid_polarizability_Drude(
         w, eps_inf, w_p, gamma, eps_b, a_x, a_yz)
 
-    sigma = (8*np.pi/3)*(w/c)**4.*np.sqrt(eps_b)**(-1)*(
-        # np.abs(alpha[0,0])**2. 
-        # + 
+    ## result I had as of 02/19/19, don't remember justification
+    # sigma = (8*np.pi/3)*(w/c)**4.*np.sqrt(eps_b)**(-1)*(
+    #     np.abs(alpha[1,1])**2.
+    #     )
+
+    ## simple fix, changing k -> w*n/c
+    sigma = (8*np.pi/3)*(w * np.sqrt(eps_b) / c)**4. * (
         np.abs(alpha[1,1])**2.
         )
     # print('(8*np.pi/3)*(w/c)**4. = ',(8*np.pi/3)*(w/c)**4. )
