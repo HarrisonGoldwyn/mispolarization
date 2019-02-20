@@ -274,6 +274,15 @@ def sparse_ret_prolate_spheroid_polarizability_Drude(w, eps_inf, w_p, gamma,
     return sparse_ret_prolate_spheroid_polarizability(
        drude_model(w, eps_inf, w_p, gamma), eps_b, a_x, a_yz, w)
     
+def sigma_prefactor(w, eps_b):
+    """ added for debugging on 02/20/19 """
+    n_b = np.sqrt(eps_b)
+    prefac = (
+        (8*np.pi/3)*(w * n_b/ c)**4. 
+        /(0.5*n_b) # copied from MNPBEM source
+        )
+    return prefac
+
 def long_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
     eps_b, a_x, a_yz):
     ''''''
@@ -286,7 +295,7 @@ def long_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
     #     )
 
     ## simple fix, changing k -> w*n/c
-    sigma = (8*np.pi/3)*(w * np.sqrt(eps_b) / c)**4. * (
+    sigma = sigma_prefactor(w, eps_b) * (
         np.abs(alpha[0,0])**2. 
         )
     return sigma
@@ -303,7 +312,7 @@ def short_sigma_scat_ret_pro_ellip(w, eps_inf, w_p, gamma,
     #     )
 
     ## simple fix, changing k -> w*n/c
-    sigma = (8*np.pi/3)*(w * np.sqrt(eps_b) / c)**4. * (
+    sigma = sigma_prefactor(w, eps_b) * (
         np.abs(alpha[1,1])**2.
         )
     # print('(8*np.pi/3)*(w/c)**4. = ',(8*np.pi/3)*(w/c)**4. )

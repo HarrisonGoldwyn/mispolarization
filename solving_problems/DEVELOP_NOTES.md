@@ -80,9 +80,10 @@ Found the file `~/Documents/MATLAB/102418/curly_rod_spectra_JC_epsb1p778.mat`, w
 
 Resultsing fit parameters without changing anything but the sprectra file are:
 
+```
 	old: array([15.74962612, 10.02510511,  0.10268783, 67.16871096, 20.79635188])
 	new: array([15.74962612, 10.02510511,  0.10268783, 67.16871096, 20.79635188])
-
+```
 Nothing changed. Let me look back at `coupled_dipoles.py` and see what's up.
 
 ### 12:26 PM
@@ -93,4 +94,85 @@ Not sure what that is about. `coupled_dipoles.py` seems clean now, all `k`'s are
 Might have to look in MNPBEM and see how they calculate the scattered power with a dielectric background. I'll do that after lunch. 
 - if that doesnt work I'll rerun the spectra (with Drude) just to be sure.
 
+### 01:28 PM 
+Looking through the BEM source code, it looks like the reported __power scattered by a plane wave is just the integral of vacuum Poynting vector (E x B) divided by n_b__...
 
+from file `/Users/chair/Documents/MATLAB/MNPBEM17/Simulation/retarded/@planewaveret/scattering.m`:
+```Matlab. 
+function [ sca, dsca ] = scattering( obj, sig )
+%  SCATTERING - Scattering cross section for plane wave excitation.
+%
+%  Usage for obj = planewaveret :
+%    [ sca, dsca ] = scattering( obj, sig )
+%  Input
+%    sig        :  compstruct object containing surface currents
+%  Output
+%     sca       :  scattering cross section
+%    dsca       :  differential cross section
+
+%  total and differential radiated power
+[ sca, dsca ] = scattering( obj.spec, sig );
+
+%  refractive index of embedding medium
+nb = sqrt( sig.p.eps{ 1 }( sig.enei ) );
+%  The scattering cross section is the radiated power normalized to the
+%  incoming power, the latter being proportional to 0.5 * epsb * (clight / nb)
+[ sca, dsca.dsca ] = deal( sca / ( 0.5 * nb ), dsca.dsca / ( 0.5 * nb ) );
+```
+where the scattered power is divided by ( 0.5 * nb ).
+where it seems to reference the higher up file `/Users/chair/Documents/MATLAB/MNPBEM17/Simulation/retarded/scattering.m`
+```matlab
+function [ sca, dsca ] = scattering( field, medium )
+%  SCATTERING - Radiated power for electromagnetic fields.
+%
+%  Usage  :
+%    [ sca, dsca ] = scattering( field )
+%  Input
+%    field      :  compstruct object with scattered electromagnetic fields
+%    medium     :  compute total radiated pwoer only in given medium
+%  Output
+%    sca        :  total radiated power
+%    dsca       :  differential radiated power for particle surface
+%                  given in FIELD
+
+%  particle surface for fields at 'infinity'
+pinfty = field.p;
+%  scattered electric and magnetic fields
+e = field.e; 
+h = field.h; 
+%  Poynting vector in direction of outer surface normal
+dsca = 0.5 * real( inner( pinfty.nvec, cross( e, conj( h ), 2 ) ) );
+  
+%  area of boundary elements
+area = pinfty.area;
+%  total cross section only in given medium
+if exist( 'medium', 'var' ) && ~isempty( medium )
+  area( pinfty.expand( num2cell( pinfty.inout( :, end ) ) ) == medium ) = 0;
+end
+%  total radiated power
+sca = squeeze( matmul( reshape( area, 1, [] ), dsca ) );
+%  convert differential radiated power to compstruct object
+dsca = compstruct( pinfty, field.enei, 'dsca', dsca );
+
+```
+which seems to define the scattered power as the surface integral of 
+$$ \mathbf{S} = 1/2 \mathbf{E} \times \mathbf{B}$$
+in line 20.
+
+### 02:19 PM
+Fitting a Drude spectra in water, I get much more reasonable fit results:
+__Drude fits__
+```
+	water: array([11.6817827 ,  9.56022562,  0.08554153, 45.24119972, 18.7831301 ])
+	vacuu: array([11.5936854 ,  9.65413421,  0.06807552, 48.04291550, 19.9337624 ])
+```
+A little better actually (particularly the radii), probably because the trans peaks split.  
+
+JC still looks bad, but maybe its passable
+__JC fits__
+```
+	water: array([28.98570393, 13.58850188,  0.09766546, 51.77701186, 15.96014311])
+```
+and this is all with $k = \omega n_b / c$ and 
+$$ \sigma_{sca} = (8* \pi / 3)*(\omega * n_b / c)^4 /(0.5 * n_b) |\alpha|^2 $$
+```
