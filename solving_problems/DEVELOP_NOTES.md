@@ -174,5 +174,12 @@ __JC fits__
 	water: array([28.98570393, 13.58850188,  0.09766546, 51.77701186, 15.96014311])
 ```
 and this is all with $k = \omega n_b / c$ and 
-$$ \sigma_{sca} = (8* \pi / 3)*(\omega * n_b / c)^4 /(0.5 * n_b) |\alpha|^2 $$
-```
+\begin{equation} 
+\sigma_{sca} = (8* \pi / 3) * (\omega * n_b / c)^4 /(0.5 * n_b) |\alpha|^2 
+\end{equation}
+
+
+## 02/21/19
+
+### 08:08 AM: Trying JC in vacuum
+For `.py` files, I think I just need to change `coupled_dipoles.py` in order to fit the spectra. I will have to manually change the background index in `fit_ellipsoid_parameters_from_spectra.ipynb` as well. 

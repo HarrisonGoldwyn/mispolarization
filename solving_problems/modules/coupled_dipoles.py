@@ -28,7 +28,7 @@ nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
 
-curly_yaml_file_name = '/curly_nrod_water.yaml'
+curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
 
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
@@ -557,14 +557,18 @@ def dipole_magnitudes(
 
     return [p0, p1]
 
-def uncoupled_p0(mol_angle, E_d_angle=None, 
-    drive_hbar_w=parameters['general']['drive_energy']):
+def uncoupled_p0(
+    mol_angle, 
+    E_d_angle=None, 
+    drive_hbar_w=parameters['general']['drive_energy'],
+    n_b=parameters['general']['background_ref_index']
+    ):
     # drive_hbar_w = parameters['general']['drive_energy']
     w = drive_hbar_w/hbar
     # w_res = w
     # gamma_nr = drude_damping_energy/hbar
     # eps_inf = 
-    n_b = parameters['general']['background_ref_index']
+    
     eps_b = n_b**2.
 
     phi_0 = mol_angle ## angle of bf_p0
