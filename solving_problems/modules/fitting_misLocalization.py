@@ -20,7 +20,9 @@ Patch notes
     Hardcoded parameter file changed to vacuum values fit from BEM spectra with
     built in.
 
-02/08/19:
+02/21/19:
+    Removed hardcoded dependence on .yaml file for plasmon and fluo parameters.
+    Leaving some bits that depend on the 'general' parameters for now. 
     
 
 ----
@@ -62,7 +64,7 @@ import fibonacci as fib
 parameter_files_path = (
     project_path + '/parameter_files')
 
-curly_yaml_file_name = '/curly_nrod_vacuum.yaml'
+curly_yaml_file_name = '/curly_nrod_water_Drude.yaml'
 parameters = yaml.load(open(parameter_files_path+curly_yaml_file_name, 'r'))
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
@@ -105,6 +107,7 @@ m_per_nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']   # Avogadro's number
 # Z_o = 376.7303 # impedence of free space in ohms (SI)
 
+## STOPPED HERE 02/21/19 5:00 PM. Removing parameters dependance
 ## System background
 n_b = parameters['general']['background_ref_index']
 eps_b = n_b**2.
@@ -159,29 +162,49 @@ class DipoleProperties(object):
         """
 
 
-    def __init__(self):
+    def __init__(self, 
+        eps_inf=parameters['plasmon']['fit_eps_inf'], 
+        hbar_omega_plasma=parameters['plasmon']['fit_hbar_wp']/hbar, 
+        hbar_gamma_drude=parameters['plasmon']['fit_hbar_gamma']/hbar, 
+        a_long_in_nm=parameters['plasmon']['fit_a1']*m_per_nm, 
+        a_short_in_nm=parameters['plasmon']['fit_a2']*m_per_nm,
+        eps_b=parameters['general']['background_ref_index']**2.0, 
+        fluo_ext_coef=parameters['fluorophore']['extinction_coeff'],
+        fluo_mass_hbar_gamma=parameters['fluorophore']['mass_gamma'],
+        fluo_nr_hbar_gamma=parameters['fluorophore']['test_gamma'],
+        fluo_quench_region_nm=10
+        ):
 
-        self.fit_result_params = [
-            ## eps_inf, hbar*omega_p, hbar*gamma_nr, eps_b 
-            ## (not used as fit param), a_x, a_yz
-            parameters['plasmon']['fit_eps_inf'], 
-            parameters['plasmon']['fit_hbar_wp']/hbar, 
-            parameters['plasmon']['fit_hbar_gamma']/hbar, 
-            eps_b, 
-            parameters['plasmon']['fit_a1']*m_per_nm, 
-            parameters['plasmon']['fit_a2']*m_per_nm
-            ]
+        self.eps_inf = eps_inf
+        self.omega_plasma = hbar_omega_plasma / hbar
+        self.gamma_drude = hbar_gamma_drude / hbar
+        self.a_long_meters = a_long_in_nm * m_per_nm
+        self.a_short_meters = a_short_in_nm * m_per_nm
 
-        self.fluo_quench_range = 10
+        # self.fit_result_params = [
+        #     ## eps_inf, hbar*omega_p, hbar*gamma_nr, eps_b 
+        #     ## (not used as fit param), a_x, a_yz
+        #     eps_inf, # parameters['plasmon']['fit_eps_inf'], 
+        #     hbar_omega_plasma / hbar, # parameters['plasmon']['fit_hbar_wp']/hbar, 
+        #     hbar_gamma_drude / hbar,# parameters['plasmon']['fit_hbar_gamma']/hbar, 
+        #     a_long_in_nm * m_per_nm, # parameters['plasmon']['fit_a1']*m_per_nm, 
+        #     a_short_in_nm * m_per_nm, # parameters['plasmon']['fit_a2']*m_per_nm
+        #     ]
+
+        self.eps_b = eps_b
+
+        ## hardcoded region around nanoparticle to through out results because
+        ## dipole approximation at small proximities
+        self.fluo_quench_range = fluo_quench_region_nm
 
         self.alpha0_diag_dyad = cp.sparse_polarizability_tensor(
             mass=cp.fluorophore_mass(
-                ext_coef=parameters['fluorophore']['extinction_coeff'], 
-                gamma=parameters['fluorophore']['mass_gamma']/hbar
+                ext_coef=fluo_ext_coef, # parameters['fluorophore']['extinction_coeff'], 
+                gamma=fluo_mass_hbar_gamma/hbar, # parameters['fluorophore']['mass_gamma']/hbar
                 ), 
             w_res=drive_hbar_omega/hbar, 
             w=drive_hbar_omega/hbar, 
-            gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
+            gamma_nr=fluo_nr_hbar_gamma/hbar, # parameters['fluorophore']['test_gamma']/hbar,
             a=0, 
             eps_inf=1, 
             ebs_b=1
@@ -189,14 +212,20 @@ class DipoleProperties(object):
 
         self.alpha1_diag_dyad = (
             cp.sparse_ret_prolate_spheroid_polarizability_Drude(
-                omega_drive, *self.fit_result_params
+                omega_drive, 
+                self.eps_inf,
+                self.omega_plasma,
+                self.gamma_drude,
+                eps_b,
+                self.a_long_meters,
+                self.a_short_meters,
                 )
             )
 
 
 class BeamSplitter(object):
 
-    def __init__():
+    def __init__(self):
         pass
 
     def powers_and_angels(self,E):
@@ -409,8 +438,8 @@ class PlottingStuff(DipoleProperties):
         if true_mol_angle is None: 
             true_mol_angle = angles
             
-        self.el_a = self.fit_result_params[4] / m_per_nm 
-        self.el_c = self.fit_result_params[5] / m_per_nm
+        self.el_a = self.a_long_meters / m_per_nm 
+        self.el_c = self.a_short_meters / m_per_nm
 
         # self.fluo_quench_range
         
@@ -551,11 +580,19 @@ class CoupledDipoles(PlottingStuff, FittingTools):
         v_rel_obs_y_pts = (self.obs_points[2].ravel()[:,None] - bfx.T[1]).T
 
         px_fields = np.asarray(
-            afi.E_field(0, v_rel_obs_x_pts, v_rel_obs_y_pts, omega_drive*n_b/c)
+            afi.E_field(
+                0, 
+                v_rel_obs_x_pts, 
+                v_rel_obs_y_pts, 
+                omega_drive*np.sqrt(self.eps_b)/c
+                )
             )
         py_fields = np.asarray(
             afi.E_field(
-                np.pi/2, v_rel_obs_x_pts, v_rel_obs_y_pts, omega_drive*n_b/c
+                np.pi/2, 
+                v_rel_obs_x_pts, 
+                v_rel_obs_y_pts, 
+                omega_drive*np.sqrt(self.eps_b)/c
                 )
             )
         pz_fields = np.zeros(py_fields.shape)
@@ -668,8 +705,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.rod_angle = plas_angle
         
         #### Filtering out molecules in region of fluorescence quenching 
-        self.el_a = self.fit_result_params[4] / m_per_nm 
-        self.el_c = self.fit_result_params[5] / m_per_nm
+        self.el_a = self.a_long_meters / m_per_nm 
+        self.el_c = self.a_short_meters / m_per_nm
         self.quel_a = self.el_a + self.fluo_quench_range ## define quenching region
         self.quel_c = self.el_c + self.fluo_quench_range
         self.input_x_mol = locations[:,0]

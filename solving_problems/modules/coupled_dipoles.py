@@ -28,7 +28,7 @@ nm = constants['physical_constants']['nm']
 n_a = constants['physical_constants']['nA']
 
 
-curly_yaml_file_name = '/curly_nrod_water.yaml'
+curly_yaml_file_name = '/curly_nrod_water_Drude.yaml'
 
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name

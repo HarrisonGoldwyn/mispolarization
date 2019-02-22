@@ -174,5 +174,19 @@ __JC fits__
 	water: array([28.98570393, 13.58850188,  0.09766546, 51.77701186, 15.96014311])
 ```
 and this is all with $k = \omega n_b / c$ and 
-$$ \sigma_{sca} = (8* \pi / 3)*(\omega * n_b / c)^4 /(0.5 * n_b) |\alpha|^2 $$
-```
+$$ \sigma_{sca} = (8* \pi / 3) * (\omega * n_b / c)^4 /(0.5 * n_b) |\alpha|^2 $$
+
+## 02/21/19
+
+Water Drude long mode peak ~ 1.85 eV 
+	short peak ~ 2.49 eV
+
+Water JC long mode peak ~ 1.86 eV
+	short peak ~ 2.4 eV
+
+### 07:38 PM 
+Note getting good localization fits for drude simulations in water. Looking for missing factors of n_b but they seem to be in the right places for 
+- fitting_misLocalization.py 
+- coupled_dipoles.py
+- anal_foc_diff_fields.py
+Note sure what else could be wrong. It looks like the same error I had last week in vacuum, which I fixed by removing a duplicate input of eps_inf I think. * yup, see note above under 02/14/19 heading. 
