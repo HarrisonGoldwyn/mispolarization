@@ -1,0 +1,3 @@
+# Currently under development
+
+This is a package written to predict the optical properties of light emitting molecules nearby plasmonic nanoparticles. Specifically, we use simple analytic models of the plasmonic response to calculate the diffraction-limited focused image as would be observed in a super resolution fluorescence microscope. The use of analytic models allows fitting of the simulated or experimentally measured image and molecule properties (such as orientation and location) can be extracted.
