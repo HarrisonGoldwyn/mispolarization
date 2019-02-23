@@ -163,11 +163,11 @@ class DipoleProperties(object):
 
 
     def __init__(self, 
-        eps_inf=parameters['plasmon']['fit_eps_inf'], 
-        hbar_omega_plasma=parameters['plasmon']['fit_hbar_wp']/hbar, 
-        hbar_gamma_drude=parameters['plasmon']['fit_hbar_gamma']/hbar, 
-        a_long_in_nm=parameters['plasmon']['fit_a1']*m_per_nm, 
-        a_short_in_nm=parameters['plasmon']['fit_a2']*m_per_nm,
+        eps_inf=parameters['plasmon']['fit_eps_inf'],
+        hbar_omega_plasma=parameters['plasmon']['fit_hbar_wp'],
+        hbar_gamma_drude=parameters['plasmon']['fit_hbar_gamma'],
+        a_long_in_nm=parameters['plasmon']['fit_a1'],
+        a_short_in_nm=parameters['plasmon']['fit_a2'],
         eps_b=parameters['general']['background_ref_index']**2.0, 
         fluo_ext_coef=parameters['fluorophore']['extinction_coeff'],
         fluo_mass_hbar_gamma=parameters['fluorophore']['mass_gamma'],

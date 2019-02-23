@@ -21,7 +21,7 @@ optics:
 plasmon:
   ## updated 02/21/18 
   fit_eps_inf: 11.6817827
-  fit_hbar_gamma: 0.08554153
   fit_hbar_wp: 9.56022562
+  fit_hbar_gamma: 0.08554153
   fit_a1: 45.24119972
   fit_a2: 18.7831301

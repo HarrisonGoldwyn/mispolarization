@@ -190,3 +190,9 @@ Note getting good localization fits for drude simulations in water. Looking for 
 - coupled_dipoles.py
 - anal_foc_diff_fields.py
 Note sure what else could be wrong. It looks like the same error I had last week in vacuum, which I fixed by removing a duplicate input of eps_inf I think. * yup, see note above under 02/14/19 heading. 
+
+## 02/22/19
+
+### 03:55 PM 
+Drude parameters look ok.
+Next thing to do: look for erros in modules that I could have introduced last night while removing yaml dependence
