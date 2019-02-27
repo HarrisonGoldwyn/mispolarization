@@ -64,7 +64,7 @@ import fibonacci as fib
 parameter_files_path = (
     project_path + '/parameter_files')
 
-curly_yaml_file_name = '/curly_nrod_water_Drude.yaml'
+curly_yaml_file_name = '/curly_nrod_water_JC.yaml'
 parameters = yaml.load(open(parameter_files_path+curly_yaml_file_name, 'r'))
 print('reading parameters from {}'.format(
     parameter_files_path+curly_yaml_file_name
