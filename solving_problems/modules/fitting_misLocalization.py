@@ -1,9 +1,10 @@
 """
 This file provides classes and functions for modeling and fitting the
 diffraction-limited images produced by a dipole emitter coupled to a
-plasmonic nanorod, modeled as a polarizable point dipole with polarizability
-of a prolate ellipsoid in the modified long wavelength approximation
--------------------------------------------------------------------------------
+plasmonic nanorod, modeled as a polarizable point dipole with
+polarizability of a prolate ellipsoid in the modified long wavelength
+approximation.
+-----------------------------------------------------------------------
 
 
 -----------
@@ -13,17 +14,25 @@ Patch notes
 02/06/19:
     This file was renamed from
     'fitting_misLocalization_adding_noise_to_modeled_images__011619v11'.
-    Currently hardcoded for a certain parameter file and fit parameters. This
-    will be changed in the future, but for now I just want to get stuff done.
+    Currently hardcoded for a certain parameter file and fit
+    parameters. This will be changed in the future, but for now I just
+    want to get stuff done.
 
 02/07/19:
-    Hardcoded parameter file changed to vacuum values fit from BEM spectra with
-    built in.
+    Hardcoded parameter file changed to vacuum values fit from BEM spectra
+    with built in.
 
 02/21/19:
-    Removed hardcoded dependence on .yaml file for plasmon and fluo parameters.
-    Leaving some bits that depend on the 'general' parameters for now.
+    Removed hardcoded dependence on .yaml file for plasmon and fluo
+    parameters. Leaving some bits that depend on the 'general'
+    parameters for now.
 
+03/06/19:
+    Added functionality to remove interference at initialization of
+    'MolCoupNanoRodExp' instance.
+
+    Sometime before this I also added functionality to isolate mode
+    effects... That happened in the last month.
 
 ----
 TODO
@@ -442,6 +451,7 @@ class PlottingStuff(DipoleProperties):
         title=r'Apparent pol. per mol. pos.',
         true_mol_angle=None,
         nanorod_angle=0,
+        given_ax=None
         ):
 
         if true_mol_angle is None:
@@ -463,10 +473,13 @@ class PlottingStuff(DipoleProperties):
         y_plot = y_plot[pt_is_in_ellip]
         angles = angles[pt_is_in_ellip]
 
-        fig, (ax0, ax_cbar) = plt.subplots(
-            nrows=1,ncols=2, figsize=(3.25,3), dpi=300,
-            gridspec_kw = {'width_ratios':[6, 0.5]}
-            )
+        if given_ax==None:
+            fig, (ax0, ax_cbar) = plt.subplots(
+                nrows=1,ncols=2, figsize=(3.25,3), dpi=300,
+                gridspec_kw = {'width_ratios':[6, 0.5]}
+                )
+        else:
+            ax0 = given_ax
 
         cmap = mpl.cm.nipy_spectral
 
@@ -499,21 +512,23 @@ class PlottingStuff(DipoleProperties):
             )
 
         ## Mark apparent orientation
-        quiv_ap = ax0.quiver(x_plot, y_plot,
-                          np.cos(angles),
-                          np.sin(angles),
-                          angles,
-                          cmap=cmap,
-                          clim = [0, np.pi/2],
-                          width=0.01,
-                          scale=12,
-                #            scale_units='width',
-                          pivot='mid',
-                          zorder=4,
-                          headaxislength=2.5,
-                          headlength=2.5,
-                          headwidth=2.5
-                          )
+        quiv_ap = ax0.quiver(
+            x_plot,
+            y_plot,
+            np.cos(angles),
+            np.sin(angles),
+            angles,
+            cmap=cmap,
+            clim = [0, np.pi/2],
+            width=0.01,
+            scale=12,
+            scale_units='width',
+            pivot='mid',
+            zorder=4,
+            headaxislength=2.5,
+            headlength=2.5,
+            headwidth=2.5,
+            )
 
         ax0.axis('equal')
         ax0.set_xlim(plot_limits)
@@ -524,20 +539,19 @@ class PlottingStuff(DipoleProperties):
 
         norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
 
-        cb1 = mpl.colorbar.ColorbarBase(ax_cbar, cmap=cmap,
-                                        norm=norm,
-                                        orientation='vertical')
-        cb1.set_label(r'observed angle $\phi$')
-    #     plas_dot = ax0.scatter(0,0,color='k',s=30)
-        cb1.set_ticks([0, np.pi/8, np.pi/4, np.pi/8 * 3, np.pi/2])
-        cb1.set_ticklabels(
-            [r'$0$', r'$\pi/8$',r'$\pi/4$',r'$3\pi/8$',r'$\pi/2$']
-            )
+        # Build colorbar if building single Axes figure
+        if given_ax==None:
+            cb1 = mpl.colorbar.ColorbarBase(ax_cbar, cmap=cmap,
+                                            norm=norm,
+                                            orientation='vertical')
+            cb1.set_label(r'observed angle $\phi$')
 
-    #     fig.tight_layout()
-
-        quiver_axis_handle = ax0
-
+            cb1.set_ticks([0, np.pi/8, np.pi/4, np.pi/8 * 3, np.pi/2])
+            cb1.set_ticklabels(
+                [r'$0$', r'$22.5$',r'$45$',r'$67.5$',r'$90$']
+                )
+        else: # Don't build colorbar
+            pass
 
         if nanorod_angle == np.pi/2:
             #### Draw rod
@@ -558,6 +572,8 @@ class PlottingStuff(DipoleProperties):
             (0,0), 2*self.el_a, 2*self.el_c, angle=nanorod_angle*180/np.pi,
             fill=False, edgecolor='Black',linestyle='--')
         ax0.add_patch(ellip)
+
+        quiver_axis_handle = ax0
         return [quiver_axis_handle]
 
     def calculate_mislocalization_magnitude(self, x_cen, y_cen, x_mol, y_mol):
@@ -690,7 +706,9 @@ class CoupledDipoles(PlottingStuff, FittingTools):
 # In[44]:
 
 class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
-    ''' Collect focused+diffracted far-field information from molecules nearby a nanorod '''
+    ''' Collect focused+diffracted far-field information from molecules
+        nearby a nanorod.
+        '''
 
     ## set up inverse mapping from observed -> true angle for signle molecule in the plane.
     saved_mapping = np.loadtxt(txt_file_path+'/obs_pol_vs_true_angle.txt')
@@ -704,7 +722,6 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         fill_value=(0,np.pi/2)
         )
 
-
     def __init__(
         self,
         locations,
@@ -714,6 +731,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         for_fit=False,
         isolate_mode=None,
         drive_energy_eV=parameters['general']['drive_energy'],
+        exclude_interference=False,
         ):
 
         CoupledDipoles.__init__(self,
@@ -722,18 +740,19 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             drive_energy_eV,
             )
 
+        # Set up instance attributes
+        self.exclude_interference = exclude_interference
         self.mol_locations = locations
         self.mol_angles = mol_angle
         self.rod_angle = plas_angle
 
-        #### Filtering out molecules in region of fluorescence quenching
+        # Filter out molecules in region of fluorescence quenching
         self.el_a = self.a_long_meters / m_per_nm
         self.el_c = self.a_short_meters / m_per_nm
         self.quel_a = self.el_a + self.fluo_quench_range ## define quenching region
         self.quel_c = self.el_c + self.fluo_quench_range
         self.input_x_mol = locations[:,0]
         self.input_y_mol = locations[:,1]
-
         self.pt_is_in_ellip = self.mol_too_close()
         ## select molecules outside region,
         if for_fit==False:
@@ -746,7 +765,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             self.mol_locations = locations
             self.mol_angles = mol_angle
 
-        ## Automatically calculate fields with coupled dipoles
+        # Automatically calculate fields with coupled dipoles upon
+        # instance initialization.
         (
             self.mol_E,
             self.plas_E,
@@ -759,8 +779,10 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
                 self.rod_angle
                 )
 
+        # Calcualte images
         self.trial_images = self.image_from_E(self.mol_E + self.plas_E )
 
+        # Calculate plot domain from molecule locations
         self.default_plot_limits = [
             (
                 np.min(self.mol_locations)
@@ -785,37 +807,46 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             ]
 
     def calculate_localization(self, save_fields=True):
-        ## should move this to a method, takes too long to initialize class.
+        """ """
         self.appar_cents = self.calculate_apparent_centroids(self.trial_images)
         self.x_cen, self.y_cen = self.appar_cents
         if save_fields == False:
             del self.mol_E
             del self.plas_E
 
+
     def calculate_polarization(self):
-        ## Calculate polarization with beam splitter
+        """ Calculate polarization with beam splitter """
+
+        # Calculate fields and angles and assign as instance attribute
         if hasattr(self, 'mol_E') and hasattr(self, 'plas_E'):
-            self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
-                self.powers_and_angels(
-                    self.mol_E + self.plas_E
+            if self.exclude_interference == False:
+                self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
+                    self.powers_and_angels(
+                        self.mol_E + self.plas_E
+                        )
                     )
-                )
+            # For exclusion of interference, fields must be input
+            # seperately into funtion 'powers_and_angels_no_interf'.
+            elif self.exclude_interference == True:
+                self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
+                    self.powers_and_angels_no_interf(
+                        self.mol_E,
+                        self.plas_E
+                        )
+                    )
+
+        # Simulation instance will have field namd differently and
+        # must be transposed.
         elif hasattr(self, 'bem_E'):
+            # Can not extract interference from simulation
             self.angles, self.Px_per_drive_I, self.Py_per_drive_I = (
-                self.powers_and_angels(
-                    np.transpose(self.bem_E, (2,0,1))
-                    )
+                    self.powers_and_angels(
+                        np.transpose(self.bem_E, (2,0,1))
+                        )
                 )
         self.mispol_angle= MolCoupNanoRodExp.f_inv(self.angles)
 
-
-#     def in_quench_zone(self):
-#         pt_is_in_ellip = np.ones(self.input_x_mol.shape, dtype=bool) ## initialize index array
-#         for i in np.arange(locations[:,0].shape[0]):
-#             ## currently works only if nanorod is vertically oriented
-#             if (self.input_x_mol[i]**2./self.quel_a**2. +  self.input_y_mol[i]**2./self.quel_c**2.) < 1:
-#                 pt_is_in_ellip[i] = False
-#         return pt_is_in_ellip
 
     def mol_too_close(self):
         '''Returns molecule locations that are outside the fluorescence
@@ -839,7 +870,12 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             )
         return (rotated_ellip_eq > 1)
 
-    def plot_mispol_map(self, plot_limits=None):
+
+    def plot_mispol_map(self,
+        plot_limits=None,
+        given_ax=None
+        ):
+
         if plot_limits == None: plot_limits = self.default_plot_limits
         if not hasattr(self, 'mispol_angle'):
             self.calculate_polarization()
@@ -850,8 +886,10 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             true_mol_angle=self.mol_angles,
             nanorod_angle=self.rod_angle,
             title=r'Split Pol. and Gau. Fit Loc.',
+            given_ax=given_ax
             )
         return quiv_ax
+
 
     def plot_mispol_map_wMisloc(self, plot_limits=None):
         if not hasattr(self, 'appar_cents'):
@@ -864,6 +902,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             self.appar_cents,
             quiv_ax,
             )
+        return quiv_ax
 
     def plot_mislocalization_magnitude_correlation(self):
         if not hasattr(self, 'appar_cents'):
@@ -882,6 +921,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         plt.ylabel('Apparent angle [deg]')
         plt.yticks([0,  np.pi/8,  np.pi/4, np.pi/8 *3, np.pi/2],
                    ['0','22.5','45','57.5','90'])
+        return plt.gca()
 
     def plot_fields(self, ith_molecule):
         plt.figure(figsize=(3,3),dpi=600)
@@ -893,7 +933,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
 #         plt.quiver(self.mol_locations[ith_molecule, 0], self.mol_locations[ith_molecule, 1],
 #                    np.cos(self.mol_angles[ith_molecule]),np.sin(self.mol_angles[ith_molecule]),
 #                    color='white',pivot='middle')
-
+        return plt.gca()
 
 # ## Fit function for model fields.
 
