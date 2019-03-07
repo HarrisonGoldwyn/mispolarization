@@ -890,7 +890,6 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             )
         return quiv_ax
 
-
     def plot_mispol_map_wMisloc(self, plot_limits=None):
         if not hasattr(self, 'appar_cents'):
             self.calculate_localization()
@@ -934,6 +933,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
 #                    np.cos(self.mol_angles[ith_molecule]),np.sin(self.mol_angles[ith_molecule]),
 #                    color='white',pivot='middle')
         return plt.gca()
+
 
 # ## Fit function for model fields.
 
