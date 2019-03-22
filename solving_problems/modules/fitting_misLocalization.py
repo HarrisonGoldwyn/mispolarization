@@ -1024,10 +1024,10 @@ class FitModelToData(FittingTools,PlottingStuff):
             params0 = (ini_x, ini_y, ini_mol_orientation)
 
             ## Normalize images for fitting.
-            a_raveled_normed_image =  images[i]/np.max(images[i])
+            a_raveled_normed_image = images[i]/np.max(images[i])
 
             ## Place image in tuple as required by `opt.least_squares`.
-            tuple_normed_image_data=tuple(a_raveled_normed_image)
+            tuple_normed_image_data = tuple(a_raveled_normed_image)
 
             ## Run fit unitil satisfied with molecule position
             mol_pos_accepted = False
@@ -1048,10 +1048,16 @@ class FitModelToData(FittingTools,PlottingStuff):
                     short_quench_radius,
                     )
                 if mol_quenched:
-                    # Try fit again, but I need to figure out what to do exactly
-                    break
+                    # Try fit again, but I need to figure out what to
+                    # do exactly.
+                    # ~~~~~~~~~~~~~
+                    # Maybe add some radius to initial guess?
+                    ini_x, ini_y = self._better_init_loc(ini_x, ini_y)
+                    params0 = (ini_x, ini_y, ini_mol_orientation)
+                    break # escape loop until '_better_init_loc' actually does something
                 elif not mol_quenched:
-                    # Fit location is far enough away from rod to be reasonable
+                    # Fit location is far enough away from rod to be
+                    # reasonable
                     mol_pos_accepted = True
 
             # We satisfied apparently.
@@ -1060,10 +1066,23 @@ class FitModelToData(FittingTools,PlottingStuff):
 
         return self.model_fit_results
 
+
+    def _better_init_loc(self, ini_x, ini_y):
+        """ Smarter initial guess algorithm if position of maxumum
+            intensity fails to return molecule position outside the
+            particle quenching zone. Not that fillting routine
+            currently (03/22/19) loops through this algorith.
+            """
+
+        smarter_ini_x, smarter_ini_y = ini_x, ini_y
+
+        return smarter_ini_x, smarter_ini_y
+
+
     def _misloc_data_minus_model(self, fit_params, *normed_raveled_image_data):
         ''' fit image model to data.
-        arguments;
-            fit_params = [ini_x, ini_y, ini_mol_orintation]
+            arguments;
+                fit_params = [ini_x, ini_y, ini_mol_orintation]
                 'ini_x' : units of nm from plas position
                 'ini_y' : units of nm from plas position
                 'ini_mol_orintation' : units of radians counter-clock from +x
