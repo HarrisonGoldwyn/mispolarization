@@ -855,9 +855,11 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         long_quench_radius=None,
         short_quench_radius=None,
         ):
-        '''Returns molecule locations that are outside the fluorescence
-           quenching zone, defined as 10 nm from surface of fit spheroid
+        '''Given molecule orientation as ('input_x_mol', 'input_y_mol'),
+            returns molecule locations that are outside the fluorescence
+            quenching zone, defined as 10 nm from surface of fit spheroid
             '''
+
         if rod_angle == None:
             rod_angle=self.rod_angle
 
