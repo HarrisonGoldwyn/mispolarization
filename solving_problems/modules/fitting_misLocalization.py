@@ -848,26 +848,45 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.mispol_angle= MolCoupNanoRodExp.f_inv(self.angles)
 
 
-    def mol_too_close(self):
+    def mol_too_close(self,
+        rod_angle=None,
+        input_x_mol=None,
+        input_y_mol=None,
+        long_quench_radius=None,
+        short_quench_radius=None,
+        ):
         '''Returns molecule locations that are outside the fluorescence
            quenching zone, defined as 10 nm from surface of fit spheroid
             '''
+        if rod_angle == None:
+            rod_angle=self.rod_angle
+
+        if input_x_mol == None:
+            input_x_mol=self.input_x_mol
+
+        if input_y_mol == None:
+            input_y_mol=self.input_y_mol
+
+        if long_quench_radius == None:
+            long_quench_radius=self.quel_a
+
+        if short_quench_radius == None:
+            short_quench_radius=self.quel_c
+
         rotated_x = (
-            np.cos(self.rod_angle)*self.input_x_mol
-            + np.sin(self.rod_angle)*self.input_y_mol
+            np.cos(rod_angle)*input_x_mol
+            + np.sin(rod_angle)*input_y_mol
             )
         rotated_y = (
-            -np.sin(self.rod_angle)*self.input_x_mol
-            + np.cos(self.rod_angle)*self.input_y_mol
+            -np.sin(rod_angle)*input_x_mol
+            + np.cos(rod_angle)*input_y_mol
             )
-
-        long_quench_radius = self.quel_a
-        short_quench_radius = self.quel_c
 
         rotated_ellip_eq = (
             rotated_x**2./long_quench_radius**2
             + rotated_y**2./short_quench_radius**2
             )
+
         return (rotated_ellip_eq > 1)
 
 
@@ -964,7 +983,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             isolate_mode,
             drive_energy_eV)
 
-    def fit_model_to_image_data(self, images=None):
+    def fit_model_to_image_data(self, images=None, not_on_rod=False):
         ## calculate index of maximum in each image,
         ## going to use this for the initial position guess
 
