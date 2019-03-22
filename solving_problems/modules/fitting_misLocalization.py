@@ -753,7 +753,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.quel_c = self.el_c + self.fluo_quench_range
         self.input_x_mol = locations[:,0]
         self.input_y_mol = locations[:,1]
-        self.pt_is_in_ellip = self.mol_too_close()
+        self.pt_is_in_ellip = self.mol_not_quenched()
         ## select molecules outside region,
         if for_fit==False:
             self.mol_locations = locations[self.pt_is_in_ellip]
@@ -848,7 +848,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         self.mispol_angle= MolCoupNanoRodExp.f_inv(self.angles)
 
 
-    def mol_too_close(self,
+    def mol_not_quenched(self,
         rod_angle=None,
         input_x_mol=None,
         input_y_mol=None,
@@ -971,11 +971,17 @@ class FitModelToData(FittingTools,PlottingStuff):
         ini_guess=None,
         isolate_mode=None,
         drive_energy_eV=parameters['general']['drive_energy'],
+        rod_angle=None,
         ):
 
         self.mol_angle=0
-        self.rod_angle=np.pi/2
-        self.image_data=image_data
+
+        if rod_angle == None:
+            self.rod_angle = np.pi/2
+        else:
+            self.rod_angle = rod_angle
+
+        self.image_data = image_data
 
         self.ini_guess = ini_guess
 
@@ -993,7 +999,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             images = self.image_data
         ## initialize array to hold fit results for arbitrary number of images
         num_of_images = images.shape[0]
-        self.model_fit_results = np.zeros((num_of_images,3))
+        model_fit_results = np.zeros((num_of_images,3))
         ## Use positions of max intensity as initial guess for molecule
         ## position.
         max_positions = self.calculate_max_xy(images)
@@ -1023,13 +1029,33 @@ class FitModelToData(FittingTools,PlottingStuff):
             ## Place image in tuple as required by `opt.least_squares`.
             tuple_normed_image_data=tuple(a_raveled_normed_image)
 
-            ## Run fit.
-            optimized_fit = opt.least_squares(
-                self._misloc_data_minus_model, ## residual
-                params0, ## initial guesses
-                args=tuple_normed_image_data, ## data to fit
-                )
-            ## Store fit result parameters as class instance attribute.
+            ## Run fit unitil satisfied with molecule position
+            mol_pos_accepted = False
+            while mol_pos_accepted == False:
+                optimized_fit = opt.least_squares(
+                    self._misloc_data_minus_model, ## residual
+                    params0, ## initial guesses
+                    args=tuple_normed_image_data, ## data to fit
+                    )
+
+                # Are we happy with the fit result?
+                fit_loc = optimized_fit['x'][:2]
+                mol_quenched = not mol_not_quenched(
+                    rod_angle,
+                    input_x_mol,
+                    input_y_mol,
+                    long_quench_radius,
+                    short_quench_radius,
+                    )
+                if mol_quenched:
+                    # Try fit again, but I need to figure out what to do exactly
+                    break
+                elif not mol_quenched:
+                    # Fit location is far enough away from rod to be reasonable
+                    mol_pos_accepted = True
+
+            # We satisfied apparently.
+            # Store fit result parameters as class instance attribute.
             self.model_fit_results[i] = optimized_fit['x']
 
         return self.model_fit_results
@@ -1220,4 +1246,4 @@ def random_ori_mol_placement(
 if __name__ == '__main__':
     '''This shit is all broken, or at least um_per_nmaintained'''
 
-    print('Why hello there.')
+    print('Just sit right back while I do nothing.')
