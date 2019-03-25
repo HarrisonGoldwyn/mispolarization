@@ -1166,9 +1166,9 @@ class FitModelToData(FittingTools,PlottingStuff):
         c = self.quel_c
 
         radius = a*c/np.sqrt(
-            a**2. * np.sin(phi)**2.
+            c**2. * np.sin(phi)**2.
             +
-            c**2. * np.cos(phi)**2.
+            a**2. * np.cos(phi)**2.
             )
 
         return radius
