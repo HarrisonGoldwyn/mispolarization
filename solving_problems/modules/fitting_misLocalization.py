@@ -384,8 +384,10 @@ class PlottingStuff(DipoleProperties):
         isolate_mode=None,
         drive_energy_eV=parameters['general']['drive_energy'],
         ):
-        ## Establish dipole properties as atributes for reference in plotting
-        ## functions.
+        """ Establish dipole properties as atributes for reference in plotting
+            functions.
+            """
+
         DipoleProperties.__init__(self,
             isolate_mode=isolate_mode,
             drive_energy_eV=drive_energy_eV,
@@ -956,11 +958,22 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         return plt.gca()
 
 
-# ## Fit function for model fields.
+    def save_exp_inst_for_fit(self):
+        """ Save's data needed for fitting to txt files for faster
+            debugging and reproducability.
+            """
 
-# In[87]:
+        # Save Images
+        if hasattr(self, 'BEM_images'):
+            np.savetxt()
+        # Save plot limits
 
-# MolCoupNanoRodExp(locations, mol_angle=0, plas_angle=np.pi/2, x_obv_grid=eye[1], y_obv_grid=eye[2])
+        # save mol locations
+
+        # save mol angles
+
+        # save nanorod angle
+
 class FitModelToData(FittingTools,PlottingStuff):
     ''' Class to contain fitting functions that act on class 'MolCoupNanoRodExp'
     as well as variables that are needed by 'MolCoupNanoRodExp'
@@ -986,10 +999,18 @@ class FitModelToData(FittingTools,PlottingStuff):
         self.ini_guess = ini_guess
 
         FittingTools.__init__(self, obs_points)
-        ## pointer to DipoleProperties.__init__()
+
+        ## pointer to DipoleProperties.__init__() to load emitter properties
         PlottingStuff.__init__(self,
             isolate_mode,
             drive_energy_eV)
+
+        # define quenching readii for smart initial guess. Attributes inherited
+        # from DipoleProperties
+        self.el_a = self.a_long_meters / m_per_nm
+        self.el_c = self.a_short_meters / m_per_nm
+        self.quel_a = self.el_a + self.fluo_quench_range ## define quenching region
+        self.quel_c = self.el_c + self.fluo_quench_range
 
     def fit_model_to_image_data(self,
         images=None,
