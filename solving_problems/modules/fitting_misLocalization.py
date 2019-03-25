@@ -1052,7 +1052,8 @@ class FitModelToData(FittingTools,PlottingStuff):
             # Should test inital guess here, since I am only changing the
             # inital guess. Later loop on fitting could still be healpful later.
             if check_ini == True:
-                ini_guess_not_quench = not MolCoupNanoRodExp.mol_not_quenched(
+                print('Checking inital guess')
+                ini_guess_not_quench = MolCoupNanoRodExp.mol_not_quenched(
                     self,
                     self.rod_angle,
                     ini_x,
@@ -1060,6 +1061,14 @@ class FitModelToData(FittingTools,PlottingStuff):
                     self.quel_a,
                     self.quel_c,
                     )
+                print(
+                    'self.rod_angle, ', self.rod_angle, '\n',
+                    'ini_x, ', ini_x, '\n',
+                    'ini_y, ', ini_y, '\n',
+                    'self.quel_a, ', self.quel_a, '\n',
+                    'self.quel_c, ', self.quel_c, '\n',
+                    )
+                print('In quenching zone? {}'.format(not ini_guess_not_quench))
                 if ini_guess_not_quench:
                     # continure to fit
                     pass
