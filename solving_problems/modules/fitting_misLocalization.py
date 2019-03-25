@@ -1003,7 +1003,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             images = self.image_data
         ## initialize array to hold fit results for arbitrary number of images
         num_of_images = images.shape[0]
-        model_fit_results = np.zeros((num_of_images,3))
+        self.model_fit_results = np.zeros((num_of_images,3))
         ## Use positions of max intensity as initial guess for molecule
         ## position.
         max_positions = self.calculate_max_xy(images)
@@ -1031,14 +1031,14 @@ class FitModelToData(FittingTools,PlottingStuff):
             # Should test inital guess here, since I am only changing the
             # inital guess. Later loop on fitting could still be healpful later.
             if check_ini == True:
-                ini_gues_quenched = not mol_not_quenched(
+                ini_gues_not_quenched = not MolCoupNanoRodExp.mol_not_quenched(
                         self.rod_angle,
                         ini_x,
                         ini_y,
                         self.quel_a,
                         self.quel_c,
                         )
-                 if ini_guess_not_quench:
+                if ini_guess_not_quench:
                     # continure to fit
                     pass
 
@@ -1080,7 +1080,7 @@ class FitModelToData(FittingTools,PlottingStuff):
                 # Check molecule postion from fit
                 fit_loc = optimized_fit['x'][:2]
                 # True or false?
-                mol_quenched = not mol_not_quenched(
+                mol_not_quenched = not MolCoupNanoRodExp.mol_not_quenched(
                     self.rod_angle,
                     fit_loc[0],
                     fit_loc[1],
