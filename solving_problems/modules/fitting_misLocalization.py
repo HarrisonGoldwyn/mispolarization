@@ -991,7 +991,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             isolate_mode,
             drive_energy_eV)
 
-    def fit_model_to_image_data(self, images=None, not_on_rod=False):
+    def fit_model_to_image_data(self, images=None, check_fit_loc=False):
         ## calculate index of maximum in each image,
         ## going to use this for the initial position guess
 
@@ -1018,10 +1018,32 @@ class FitModelToData(FittingTools,PlottingStuff):
                     i, ini_x, ini_y
                     )
                 )
+
             ## Randomize initial molecule oriantation, maybe do something
             ## smarter later.
             ini_mol_orientation = np.random.random(1)*np.pi/2
             params0 = (ini_x, ini_y, ini_mol_orientation)
+
+            # Should test inital guess here, since I am only changing the
+            # inital guess. Later loop on fitting could still be healpful later.
+            ini_gues_quenched = not mol_not_quenched(
+                    self.rod_angle,
+                    ini_x,
+                    ini_y,
+                    self.quel_a,
+                    self.quel_c,
+                    )
+            if ini_guess_not_quench:
+                # continure to fit
+                pass
+
+            elif not ini_guess_not_quench:
+                # Adjust ini_guess to be outsie quenching zone
+                print('Params modified, OG params: {}'.format(params0))
+                ini_x, ini_y = self._better_init_loc(ini_x, ini_y)
+                params0 = (ini_x, ini_y, ini_mol_orientation)
+                print('but now they are: {}'.format(params0))
+
 
             ## Normalize images for fitting.
             a_raveled_normed_image = images[i]/np.max(images[i])
@@ -1043,10 +1065,10 @@ class FitModelToData(FittingTools,PlottingStuff):
 
                 # Break loop here if we don't want to iterature through smarter
                 # initial guesses.
-                if not_on_rod == False:
+                if check_fit_loc == False:
                     # PROCEED NO FURTHER
                     break
-                elif not_on_rod == True:
+                elif check_fit_loc == True:
                     # Proceed to more fits
                     pass
 
