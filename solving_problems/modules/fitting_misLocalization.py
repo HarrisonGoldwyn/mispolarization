@@ -991,7 +991,11 @@ class FitModelToData(FittingTools,PlottingStuff):
             isolate_mode,
             drive_energy_eV)
 
-    def fit_model_to_image_data(self, images=None, check_fit_loc=False):
+    def fit_model_to_image_data(self,
+        images=None,
+        check_fit_loc=False,
+        check_ini=False
+        ):
         ## calculate index of maximum in each image,
         ## going to use this for the initial position guess
 
@@ -1026,23 +1030,24 @@ class FitModelToData(FittingTools,PlottingStuff):
 
             # Should test inital guess here, since I am only changing the
             # inital guess. Later loop on fitting could still be healpful later.
-            ini_gues_quenched = not mol_not_quenched(
-                    self.rod_angle,
-                    ini_x,
-                    ini_y,
-                    self.quel_a,
-                    self.quel_c,
-                    )
-            if ini_guess_not_quench:
-                # continure to fit
-                pass
+            if check_ini == True:
+                ini_gues_quenched = not mol_not_quenched(
+                        self.rod_angle,
+                        ini_x,
+                        ini_y,
+                        self.quel_a,
+                        self.quel_c,
+                        )
+                 if ini_guess_not_quench:
+                    # continure to fit
+                    pass
 
-            elif not ini_guess_not_quench:
-                # Adjust ini_guess to be outsie quenching zone
-                print('Params modified, OG params: {}'.format(params0))
-                ini_x, ini_y = self._better_init_loc(ini_x, ini_y)
-                params0 = (ini_x, ini_y, ini_mol_orientation)
-                print('but now they are: {}'.format(params0))
+                elif not ini_guess_not_quench:
+                    # Adjust ini_guess to be outsie quenching zone
+                    print('Params modified, OG params: {}'.format(params0))
+                    ini_x, ini_y = self._better_init_loc(ini_x, ini_y)
+                    params0 = (ini_x, ini_y, ini_mol_orientation)
+                    print('but now they are: {}'.format(params0))
 
 
             ## Normalize images for fitting.
