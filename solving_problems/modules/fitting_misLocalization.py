@@ -1029,32 +1029,47 @@ class FitModelToData(FittingTools,PlottingStuff):
             ## Place image in tuple as required by `opt.least_squares`.
             tuple_normed_image_data = tuple(a_raveled_normed_image)
 
+
             ## Run fit unitil satisfied with molecule position
             mol_pos_accepted = False
             while mol_pos_accepted == False:
+
+                # Perform fit
                 optimized_fit = opt.least_squares(
                     self._misloc_data_minus_model, ## residual
                     params0, ## initial guesses
                     args=tuple_normed_image_data, ## data to fit
                     )
 
-                # Are we happy with the fit result?
+                # Break loop here if we don't want to iterature through smarter
+                # initial guesses.
+                if not_on_rod == False:
+                    # PROCEED NO FURTHER
+                    break
+                elif not_on_rod == True:
+                    # Proceed to more fits
+                    pass
+
+                # Check molecule postion from fit
                 fit_loc = optimized_fit['x'][:2]
+                # True or false?
                 mol_quenched = not mol_not_quenched(
-                    rod_angle,
-                    input_x_mol,
-                    input_y_mol,
-                    long_quench_radius,
-                    short_quench_radius,
+                    self.rod_angle,
+                    fit_loc[0],
+                    fit_loc[1],
+                    self.quel_a,
+                    self.quel_c,
                     )
+
                 if mol_quenched:
                     # Try fit again, but I need to figure out what to
                     # do exactly.
                     # ~~~~~~~~~~~~~
-                    # Maybe add some radius to initial guess?
+                    # Add radius to initial guess.
+                    print('OG params: {}'.format(params0))
                     ini_x, ini_y = self._better_init_loc(ini_x, ini_y)
                     params0 = (ini_x, ini_y, ini_mol_orientation)
-                    break # escape loop until '_better_init_loc' actually does something
+                    print('but now they are: {}'.format(params0))
                 elif not mol_quenched:
                     # Fit location is far enough away from rod to be
                     # reasonable
@@ -1076,7 +1091,36 @@ class FitModelToData(FittingTools,PlottingStuff):
 
         smarter_ini_x, smarter_ini_y = ini_x, ini_y
 
+        ## Move initial guess outside quenching zone.
+        #
+        # Convert position to polar coords
+        circ_angl = afi.phi(ini_x, ini_y)
+        # sub radius with ellipse radius at given angle
+        radius = self._polar_ellipse_semi_r(circ_angl)
+        # convert back to cartisean
+        smarter_ini_x, smarter_ini_y = self.circ_to_cart(radius, circ_angl)
+
         return smarter_ini_x, smarter_ini_y
+
+
+    def _polar_ellipse_semi_r(self, phi):
+        a = self.quel_a
+        c = self.quel_c
+
+        radius = a*c/np.sqrt(
+            a**2. * np.sin(phi)**2.
+            +
+            c**2. * np.cos(phi)**2.
+            )
+
+        return radius
+
+
+    def circ_to_cart(self, r, phi):
+        x = r*np.cos(phi)
+        y = r*np.sin(phi)
+
+        return x, y
 
 
     def _misloc_data_minus_model(self, fit_params, *normed_raveled_image_data):
