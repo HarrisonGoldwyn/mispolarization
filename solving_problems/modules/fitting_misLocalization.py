@@ -996,6 +996,7 @@ class FitModelToData(FittingTools,PlottingStuff):
 
         self.image_data = image_data
 
+        # This should really be moved to the fit method...
         self.ini_guess = ini_guess
 
         FittingTools.__init__(self, obs_points)
@@ -1025,21 +1026,40 @@ class FitModelToData(FittingTools,PlottingStuff):
         ## initialize array to hold fit results for arbitrary number of images
         num_of_images = images.shape[0]
         self.model_fit_results = np.zeros((num_of_images,3))
-        ## Use positions of max intensity as initial guess for molecule
-        ## position.
-        max_positions = self.calculate_max_xy(images)
+
+        ## If going to use positions of max intensity as initial guess for molecule
+        ## position, calculate positions
+        if self.ini_guess is None:
+            max_positions = self.calculate_max_xy(images)
+
+        # If using Gaussian centroids, calculate.
+        if (self.ini_guess == 'Gauss') or (self.ini_guess == 'gauss'):
+            self.x_gau_cen, self.y_gau_cen = self.calculate_apparent_centroids(
+                images
+                )
 
         ## Loop through images and fit.
         for i in np.arange(num_of_images):
             ## Establish initial guesses for molecules
+
+            # If no initial guesses specified as kwarg, use pixel
+            # location of maximum intensity.
             if self.ini_guess is None:
                 ini_x = np.round(max_positions[0][i])
                 ini_y = np.round(max_positions[1][i])
+
+            # If kwarg 'Gauss' specified, use centroid of gaussian
+            # localization as inilial guess
+            elif (self.ini_guess == 'Gauss') or (self.ini_guess == 'gauss'):
+                ini_x, ini_y = [self.x_gau_cen[i], self.y_gau_cen[i]]
+
+            # Else, assume ini_guesses given as numy array.
             else:
                 ini_x = np.round(self.ini_guess[i, 0])
                 ini_y = np.round(self.ini_guess[i, 1])
+
             print(
-                'initial guess for molecule {} location: ({},{})'.format(
+                '\n','initial guess for molecule {} location: ({},{})'.format(
                     i, ini_x, ini_y
                     )
                 )
@@ -1047,6 +1067,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             ## Randomize initial molecule oriantation, maybe do something
             ## smarter later.
             ini_mol_orientation = np.random.random(1)*np.pi/2
+            # And assign parameters for fit.
             params0 = (ini_x, ini_y, ini_mol_orientation)
 
             # Should test inital guess here, since I am only changing the
@@ -1138,6 +1159,16 @@ class FitModelToData(FittingTools,PlottingStuff):
             self.model_fit_results[i] = optimized_fit['x']
 
         return self.model_fit_results
+
+
+    # def naive_ini_guess(self, image):
+    #     ini_x, ini_y = self.calculate_apparent_centroids(image)
+    #     return ini_x, ini_y
+
+    def calculate_localization(self, save_fields=True):
+        """ """
+        self.x_gau_cen, self.y_gau_cen = self.calculate_apparent_centroids(
+            self.trial_images)
 
 
     def _better_init_loc(self, ini_x, ini_y):
