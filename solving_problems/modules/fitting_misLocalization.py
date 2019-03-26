@@ -393,6 +393,32 @@ class PlottingStuff(DipoleProperties):
             drive_energy_eV=drive_energy_eV,
             )
 
+        # from matplotlib import cm
+        from matplotlib.colors import ListedColormap
+
+        curly_color_array = np.array([
+            [164/255, 49/255, 45/255, 1],
+            [223/255, 52/255, 51/255, 1],
+            [205/255, 52/255, 49/255, 1],
+            [226/255, 55/255, 51/255, 1],
+            [226/255, 52/255, 51/255, 1],
+            [228/255, 66/255, 52/255, 1],
+            [227/255, 60/255, 52/255, 1],
+            [230/255, 88/255, 53/255, 1],
+            [229/255, 74/255, 53/255, 1],
+            [235/255, 118/255, 56/255, 1],
+            [232/255, 102/255, 55/255, 1],
+            [242/255, 151/255, 58/255, 1],
+            [238/255, 132/255, 57/255, 1],
+            [248/255, 187/255, 59/255, 1],
+            [244/255, 165/255, 59/255, 1],
+            [250/255, 223/255, 60/255, 1],
+            [195/255, 178/255, 107/255, 1],
+            [170/255, 160/255, 153/255, 1],
+            ])
+
+        self.curlycm = ListedColormap(curly_color_array)
+
     def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
         x1, x2 = mol_x[p], cen_x[p]
         y1, y2 = mol_y[p], cen_y[p]
@@ -483,7 +509,8 @@ class PlottingStuff(DipoleProperties):
         else:
             ax0 = given_ax
 
-        cmap = mpl.cm.nipy_spectral
+        # cmap = mpl.cm.nipy_spectral
+        cmap = self.curlycm
 
         ## Mark molecule locations
         scat_tr = ax0.scatter(x_plot, y_plot, s=3,
