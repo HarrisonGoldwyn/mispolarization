@@ -489,6 +489,7 @@ class PlottingStuff(DipoleProperties):
         if true_mol_angle is None:
             true_mol_angle = angles
 
+
         self.el_a = self.a_long_meters / m_per_nm
         self.el_c = self.a_short_meters / m_per_nm
 
@@ -516,41 +517,50 @@ class PlottingStuff(DipoleProperties):
         # cmap = mpl.cm.nipy_spectral
         cmap = self.curlycm
 
+
         ## Mark molecule locations
         scat_tr = ax0.scatter(x_plot, y_plot, s=3,
-                        color='black',
-        #                    cmap='inferno',
-        #                    clim = [0, np.pi/2],
-    #                        width=0.005,
-    #                        scale=20,
-                #            scale_units='width',
-    #                        pivot='mid',
-        #                   linewidth=100.,
-    #                       headaxislength=0.0,
-    #                       headlength=0.0
-                          )
-        ## mark true orientation
-        quiv_tr = ax0.quiver(
-            x_plot, y_plot, np.cos(true_mol_angle),np.sin(true_mol_angle),
             color='black',
-        #     cmap='inferno',
-        #     clim = [0, np.pi/2],
-            width=0.005,
-            scale=15,
-              scale_units='width',
-            pivot='mid',
-        #   linewidth=100.,
-            headaxislength=0.0,
-            headlength=0.0
+            # cmap='inferno',
+            # clim = [0, np.pi/2],
+            # width=0.005,
+            # scale=20,
+            # scale_units='width',
+            # pivot='mid',
+            # linewidth=100.,
+            # headaxislength=0.0,
+            # headlength=0.0,
             )
 
+        # If true angles are given as arguments, mark them
+        if true_mol_angle is not None:
+            ## mark true orientation
+            quiv_tr = ax0.quiver(
+                x_plot, y_plot, np.cos(true_mol_angle),np.sin(true_mol_angle),
+                color='black',
+            #     cmap='inferno',
+            #     clim = [0, np.pi/2],
+                width=0.005,
+                scale=15,
+                  scale_units='width',
+                pivot='mid',
+            #   linewidth=100.,
+                headaxislength=0.0,
+                headlength=0.0
+                )
+
+        # For main quiver, plot relative mispolarization if true angle is given
+        if true_mol_angle is None:
+            plot_angle = angles
+        elif true_mol_angle is not None:
+            plot_angle = angles - true_mol_angle
         ## Mark apparent orientation
         quiv_ap = ax0.quiver(
             x_plot,
             y_plot,
-            np.cos(angles),
-            np.sin(angles),
-            angles,
+            np.cos(plot_angle),
+            np.sin(plot_angle),
+            plot_angle,
             cmap=cmap,
             clim = [0, np.pi/2],
             width=0.01,
