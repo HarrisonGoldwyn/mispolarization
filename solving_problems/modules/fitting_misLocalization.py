@@ -380,6 +380,37 @@ class FittingTools(object):
 
 class PlottingStuff(DipoleProperties):
 
+    # Custom colormap to match Curly's, followed tutorial at
+    # https://matplotlib.org/gallery/color/custom_cmap.html#sphx-glr-gallery-color-custom-cmap-py
+    from matplotlib.colors import LinearSegmentedColormap
+
+    curly_colors = [
+        [164/255, 49/255, 45/255],
+        [205/255, 52/255, 49/255],
+        [223/255, 52/255, 51/255],
+        [226/255, 52/255, 51/255],
+        [226/255, 55/255, 51/255],
+        [227/255, 60/255, 52/255],
+        [228/255, 66/255, 52/255],
+        [229/255, 74/255, 53/255],
+        [230/255, 88/255, 53/255],
+        [232/255, 102/255, 55/255],
+        [235/255, 118/255, 56/255],
+        [238/255, 132/255, 57/255],
+        [242/255, 151/255, 58/255],
+        [244/255, 165/255, 59/255],
+        [248/255, 187/255, 59/255],
+        [250/255, 223/255, 60/255],
+        [195/255, 178/255, 107/255],
+        [170/255, 160/255, 153/255],
+        ]
+
+    curlycm = LinearSegmentedColormap.from_list(
+        'curly_cmap',
+        curly_colors[::-1],
+        N=500
+        )
+
     def __init__(self,
         isolate_mode=None,
         drive_energy_eV=parameters['general']['drive_energy'],
@@ -391,36 +422,6 @@ class PlottingStuff(DipoleProperties):
         DipoleProperties.__init__(self,
             isolate_mode=isolate_mode,
             drive_energy_eV=drive_energy_eV,
-            )
-
-        # from matplotlib import cm
-        from matplotlib.colors import LinearSegmentedColormap
-
-        curly_colors = [
-            [164/255, 49/255, 45/255],
-            [205/255, 52/255, 49/255],
-            [223/255, 52/255, 51/255],
-            [226/255, 52/255, 51/255],
-            [226/255, 55/255, 51/255],
-            [227/255, 60/255, 52/255],
-            [228/255, 66/255, 52/255],
-            [229/255, 74/255, 53/255],
-            [230/255, 88/255, 53/255],
-            [232/255, 102/255, 55/255],
-            [235/255, 118/255, 56/255],
-            [238/255, 132/255, 57/255],
-            [242/255, 151/255, 58/255],
-            [244/255, 165/255, 59/255],
-            [248/255, 187/255, 59/255],
-            [250/255, 223/255, 60/255],
-            [195/255, 178/255, 107/255],
-            [170/255, 160/255, 153/255],
-            ]
-
-        self.curlycm = LinearSegmentedColormap.from_list(
-            'curly_cmap',
-            curly_colors[::-1],
-            N=500
             )
 
     def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
@@ -486,9 +487,11 @@ class PlottingStuff(DipoleProperties):
         given_ax=None
         ):
 
+        # For main quiver, plot relative mispolarization if true angle is given
         if true_mol_angle is None:
             true_mol_angle = angles
-
+        elif true_mol_angle is not None:
+            diff_angles = np.abs(angles - true_mol_angle)
 
         self.el_a = self.a_long_meters / m_per_nm
         self.el_c = self.a_short_meters / m_per_nm
@@ -504,6 +507,7 @@ class PlottingStuff(DipoleProperties):
 
         x_plot = x_plot[pt_is_in_ellip]
         y_plot = y_plot[pt_is_in_ellip]
+        diff_angles = diff_angles[pt_is_in_ellip]
         angles = angles[pt_is_in_ellip]
 
         if given_ax==None:
@@ -515,7 +519,7 @@ class PlottingStuff(DipoleProperties):
             ax0 = given_ax
 
         # cmap = mpl.cm.nipy_spectral
-        cmap = self.curlycm
+        cmap = PlottingStuff.curlycm
 
 
         ## Mark molecule locations
@@ -549,18 +553,14 @@ class PlottingStuff(DipoleProperties):
                 headlength=0.0
                 )
 
-        # For main quiver, plot relative mispolarization if true angle is given
-        if true_mol_angle is None:
-            plot_angle = angles
-        elif true_mol_angle is not None:
-            plot_angle = angles - true_mol_angle
+
         ## Mark apparent orientation
         quiv_ap = ax0.quiver(
             x_plot,
             y_plot,
-            np.cos(plot_angle),
-            np.sin(plot_angle),
-            plot_angle,
+            np.cos(angles),
+            np.sin(angles),
+            diff_angles,
             cmap=cmap,
             clim = [0, np.pi/2],
             width=0.01,
