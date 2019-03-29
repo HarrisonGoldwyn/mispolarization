@@ -1311,6 +1311,7 @@ class FitModelToData(FittingTools,PlottingStuff):
         self,
         fitted_exp_instance,
         plot_limits=None,
+        given_ax=None
         ):
         '''...'''
 
@@ -1327,6 +1328,7 @@ class FitModelToData(FittingTools,PlottingStuff):
             true_mol_angle = fitted_exp_instance.mol_angles,
             nanorod_angle = fitted_exp_instance.rod_angle,
             title=r'Model Fit Pol. and Loc.',
+            given_ax=given_ax
             )
         self.scatter_centroids_wLine(fitted_exp_instance.mol_locations[:,0],
                                 fitted_exp_instance.mol_locations[:,1],
