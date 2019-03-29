@@ -577,8 +577,8 @@ class PlottingStuff(DipoleProperties):
         ax0.set_xlim(plot_limits)
         ax0.set_ylim(plot_limits)
         ax0.set_title(title)
-        ax0.set_xlabel('x [nm]')
-        ax0.set_ylabel('y [nm]')
+        ax0.set_xlabel(r'$x$ [nm]')
+        ax0.set_ylabel(r'$y$ [nm]')
 
         norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
 
@@ -1020,8 +1020,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         plt.pcolor(eye[1]/m_per_nm,eye[2]/m_per_nm,(self.trial_images[ith_molecule,:]).reshape(eye[1].shape))
         plt.colorbar()
         plt.title(r'$|E|^2/|E_\mathrm{inc}|^2$')
-        plt.xlabel(r'x [nm]')
-        plt.ylabel(r'y [nm]')
+        plt.xlabel(r'$x$ [nm]')
+        plt.ylabel(r'$y$ [nm]')
 #         plt.quiver(self.mol_locations[ith_molecule, 0], self.mol_locations[ith_molecule, 1],
 #                    np.cos(self.mol_angles[ith_molecule]),np.sin(self.mol_angles[ith_molecule]),
 #                    color='white',pivot='middle')
@@ -1332,8 +1332,8 @@ class FitModelToData(FittingTools,PlottingStuff):
                 linewidths=0.5,
                 )
         plt.title(r'$|E|^2/|E_\mathrm{inc}|^2$')
-        plt.xlabel(r'x [nm]')
-        plt.ylabel(r'y [nm]')
+        plt.xlabel(r'$x$ [nm]')
+        plt.ylabel(r'$y$ [nm]')
         return plt.gca()
 
     def plot_fit_results_as_quiver_map(
