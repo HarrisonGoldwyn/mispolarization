@@ -596,28 +596,57 @@ class PlottingStuff(DipoleProperties):
         else: # Don't build colorbar
             pass
 
+        curly_nanorod_color = (241/255, 223/255, 182/255)
         if nanorod_angle == np.pi/2:
-            #### Draw rod
-            circle = mpl.patches.Circle((0, 24), 20, facecolor='Gold',
-                        edgecolor='Black', linewidth=0)
-            bot_circle = mpl.patches.Circle((0, -24), 20, facecolor='Gold',
-                        edgecolor='Black', linewidth=0)
+            # Draw rod
+            circle = mpl.patches.Circle(
+                (0, 24),
+                20,
+                # facecolor='Gold',
+                facecolor=curly_nanorod_color,
+                edgecolor='Black',
+                linewidth=0,
+                )
+            bot_circle = mpl.patches.Circle(
+                (0, -24),
+                20,
+                # facecolor='Gold',
+                facecolor=curly_nanorod_color,
+                edgecolor='Black',
+                linewidth=0,
+                )
             rect = mpl.patches.Rectangle(
-                (-20,-24), 40, 48, angle=0.0, facecolor='Gold',
-                edgecolor='Black', linewidth=0)
+                (-20,-24),
+                40,
+                48,
+                angle=0.0,
+                # facecolor='Gold',
+                facecolor=curly_nanorod_color,
+                edgecolor='Black',
+                linewidth=0,
+                )
 
             ax0.add_patch(circle)
             ax0.add_patch(rect)
             ax0.add_patch(bot_circle)
 
-        ## model ellipsoid
+        ## Draw projection of model spheroid as ellipse
+        curly_dashed_line_color = (120/255, 121/255, 118/255)
         ellip = mpl.patches.Ellipse(
-            (0,0), 2*self.el_a, 2*self.el_c, angle=nanorod_angle*180/np.pi,
-            fill=False, edgecolor='Black',linestyle='--')
+            (0,0),
+            2*self.el_a,
+            2*self.el_c,
+            angle=nanorod_angle*180/np.pi,
+            fill=False,
+            # edgecolor='Black',
+            edgecolor=curly_dashed_line_color,
+            linestyle='--'
+            )
         ax0.add_patch(ellip)
 
         quiver_axis_handle = ax0
         return [quiver_axis_handle]
+
 
     def calculate_mislocalization_magnitude(self, x_cen, y_cen, x_mol, y_mol):
         misloc = ( (x_cen-x_mol)**2. + (y_cen-y_mol)**2. )**(0.5)
