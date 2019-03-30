@@ -411,6 +411,8 @@ class PlottingStuff(DipoleProperties):
         N=500
         )
 
+    a_shade_of_green = [0/255, 219/255, 1/255]
+
     def __init__(self,
         isolate_mode=None,
         drive_energy_eV=parameters['general']['drive_energy'],
@@ -456,18 +458,42 @@ class PlottingStuff(DipoleProperties):
         if ax == None:
             plt.figure(dpi=300)
             for i in np.arange(x_plot.shape[0]):
-                self.connectpoints(x_plot, y_plot, x_mol_loc, y_mol_loc, i,zorder=2)
+                self.connectpoints(x_plot,
+                    y_plot,
+                    x_mol_loc,
+                    y_mol_loc,
+                    i,
+                    zorder=2,
+                    )
 
-            plt.scatter(x_plot, y_plot, s=10, c='Red', zorder=3)
+            plt.scatter(
+                x_plot,
+                y_plot,
+                s=10,
+                c=PlottingStuff.a_shade_of_green,
+                zorder=3,
+                )
             plt.tight_layout()
 
 
         else:
             for i in np.arange(x_plot.shape[0]):
                 self.connectpoints(
-                    x_plot, y_plot, x_mol_loc, y_mol_loc, i, ax,zorder=2
+                    x_plot,
+                    y_plot,
+                    x_mol_loc,
+                    y_mol_loc,
+                    i,
+                    ax,
+                    zorder=2,
                     )
-            ax.scatter(x_plot, y_plot, s=10, c='Red', zorder=3)
+            ax.scatter(
+                x_plot,
+                y_plot,
+                s=10,
+                c=PlottingStuff.a_shade_of_green,
+                zorder=3,
+                )
             return ax
     #     plt.xlim([-2000,2000])
     #     plt.ylim([-2000,2000])
