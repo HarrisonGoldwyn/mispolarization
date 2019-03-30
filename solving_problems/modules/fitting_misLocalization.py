@@ -470,7 +470,7 @@ class PlottingStuff(DipoleProperties):
                 x_plot,
                 y_plot,
                 s=10,
-                c=PlottingStuff.a_shade_of_green,
+                c=[PlottingStuff.a_shade_of_green],
                 zorder=3,
                 )
             plt.tight_layout()
@@ -491,7 +491,7 @@ class PlottingStuff(DipoleProperties):
                 x_plot,
                 y_plot,
                 s=10,
-                c=PlottingStuff.a_shade_of_green,
+                c=[PlottingStuff.a_shade_of_green],
                 zorder=3,
                 )
             return ax
@@ -537,7 +537,7 @@ class PlottingStuff(DipoleProperties):
         diff_angles = diff_angles[pt_is_in_ellip]
         angles = angles[pt_is_in_ellip]
 
-        if given_ax==None:
+        if given_ax is None:
             fig, (ax0, ax_cbar) = plt.subplots(
                 nrows=1,ncols=2, figsize=(3.25,3), dpi=300,
                 gridspec_kw = {'width_ratios':[6, 0.5]}
@@ -610,7 +610,7 @@ class PlottingStuff(DipoleProperties):
         norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
 
         # Build colorbar if building single Axes figure
-        if given_ax==None:
+        if given_ax is None:
             cb1 = mpl.colorbar.ColorbarBase(ax_cbar, cmap=cmap,
                                             norm=norm,
                                             orientation='vertical')
@@ -1015,12 +1015,17 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             )
         return quiv_ax
 
-    def plot_mispol_map_wMisloc(self, plot_limits=None, plot_ellipse=True):
+    def plot_mispol_map_wMisloc(self,
+        plot_limits=None,
+        given_ax=None,
+        plot_ellipse=True,
+        ):
         if not hasattr(self, 'appar_cents'):
             self.calculate_localization()
         if plot_limits == None: plot_limits = self.default_plot_limits
         quiv_ax = self.plot_mispol_map(
             plot_limits,
+            given_ax=given_ax,
             plot_ellipse=plot_ellipse,
             )
 
@@ -1261,7 +1266,14 @@ class FitModelToData(FittingTools,PlottingStuff):
 
             # We satisfied apparently.
             # Store fit result parameters as class instance attribute.
-            self.model_fit_results[i] = optimized_fit['x']
+            self.model_fit_results[i][:2] = optimized_fit['x'][:2]
+            # Project fit result angles to first quadrant
+            angle_in_first_quad = np.arctan(
+                np.abs(np.sin(optimized_fit['x'][2]))
+                /
+                np.abs(np.cos(optimized_fit['x'][2]))
+                )
+            self.model_fit_results[i][2] = angle_in_first_quad
 
         return self.model_fit_results
 
