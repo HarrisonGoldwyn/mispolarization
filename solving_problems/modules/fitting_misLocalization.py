@@ -484,7 +484,8 @@ class PlottingStuff(DipoleProperties):
         title=r'Apparent pol. per mol. pos.',
         true_mol_angle=None,
         nanorod_angle=0,
-        given_ax=None
+        given_ax=None,
+        plot_ellipse=True,
         ):
 
         # For main quiver, plot relative mispolarization if true angle is given
@@ -631,18 +632,21 @@ class PlottingStuff(DipoleProperties):
             ax0.add_patch(bot_circle)
 
         ## Draw projection of model spheroid as ellipse
-        curly_dashed_line_color = (120/255, 121/255, 118/255)
-        ellip = mpl.patches.Ellipse(
-            (0,0),
-            2*self.el_a,
-            2*self.el_c,
-            angle=nanorod_angle*180/np.pi,
-            fill=False,
-            # edgecolor='Black',
-            edgecolor=curly_dashed_line_color,
-            linestyle='--'
-            )
-        ax0.add_patch(ellip)
+        if plot_ellipse==True:
+            curly_dashed_line_color = (120/255, 121/255, 118/255)
+            ellip = mpl.patches.Ellipse(
+                (0,0),
+                2*self.el_a,
+                2*self.el_c,
+                angle=nanorod_angle*180/np.pi,
+                fill=False,
+                # edgecolor='Black',
+                edgecolor=curly_dashed_line_color,
+                linestyle='--'
+                )
+            ax0.add_patch(ellip)
+        elif plot_ellipse==False:
+            pass
 
         quiver_axis_handle = ax0
         return [quiver_axis_handle]
@@ -966,7 +970,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
 
     def plot_mispol_map(self,
         plot_limits=None,
-        given_ax=None
+        given_ax=None,
+        plot_ellipse=True,
         ):
 
         if plot_limits == None: plot_limits = self.default_plot_limits
@@ -979,15 +984,19 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             true_mol_angle=self.mol_angles,
             nanorod_angle=self.rod_angle,
             title=r'Split Pol. and Gau. Fit Loc.',
-            given_ax=given_ax
+            given_ax=given_ax,
+            plot_ellipse=plot_ellipse
             )
         return quiv_ax
 
-    def plot_mispol_map_wMisloc(self, plot_limits=None):
+    def plot_mispol_map_wMisloc(self, plot_limits=None, plot_ellipse=True):
         if not hasattr(self, 'appar_cents'):
             self.calculate_localization()
         if plot_limits == None: plot_limits = self.default_plot_limits
-        quiv_ax = self.plot_mispol_map(plot_limits)
+        quiv_ax = self.plot_mispol_map(
+            plot_limits,
+            plot_ellipse=plot_ellipse,
+            )
 
         self.scatter_centroids_wLine(self.mol_locations[:,0],
             self.mol_locations[:,1],
