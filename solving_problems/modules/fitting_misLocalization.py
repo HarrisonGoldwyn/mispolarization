@@ -514,7 +514,6 @@ class PlottingStuff(DipoleProperties):
         plot_ellipse=True,
         cbar_ax=None,
         cbar_label_str=None,
-        cbar_location=None,
         ):
 
         # For main quiver, plot relative mispolarization if true angle is given
@@ -550,21 +549,6 @@ class PlottingStuff(DipoleProperties):
 
         # cmap = mpl.cm.nipy_spectral
         cmap = PlottingStuff.curlycm
-
-
-        ## Mark molecule locations
-        scat_tr = ax0.scatter(x_plot, y_plot, s=3,
-            color='black',
-            # cmap='inferno',
-            # clim = [0, np.pi/2],
-            # width=0.005,
-            # scale=20,
-            # scale_units='width',
-            # pivot='mid',
-            # linewidth=100.,
-            # headaxislength=0.0,
-            # headlength=0.0,
-            )
 
         # If true angles are given as arguments, mark them
         if true_mol_angle is not None:
@@ -603,6 +587,11 @@ class PlottingStuff(DipoleProperties):
             headwidth=2.5,
             )
 
+        ## Mark molecule locations
+        scat_tr = ax0.scatter(x_plot, y_plot, s=3,
+            color='black',
+            )
+
         ax0.axis('equal')
         ax0.set_xlim(plot_limits)
         ax0.set_ylim(plot_limits)
@@ -610,20 +599,16 @@ class PlottingStuff(DipoleProperties):
         ax0.set_xlabel(r'$x$ [nm]')
         ax0.set_ylabel(r'$y$ [nm]')
 
-
-
         # Build colorbar if building single Axes figure
         if given_ax is None:
             if cbar_ax is None:
-                cbar_ax=ax_cbar,
+                cbar_ax=ax_cbar
             if cbar_label_str is None:
-                cbar_label_str=r'observed angle $\phi$',
-            if cbar_location is None:
-                cbar_location='right',
+                cbar_label_str=r'observed angle $\phi$'
+
             self.build_colorbar(
                 cbar_ax=cbar_ax,
                 cbar_label_str=cbar_label_str,
-                cbar_location=cbar_location,
                 cmap=cmap
                 )
         else: # Don't build colorbar
@@ -684,7 +669,7 @@ class PlottingStuff(DipoleProperties):
         return [quiver_axis_handle]
 
 
-    def build_colorbar(self, cbar_ax, cbar_label_str, cbar_location, cmap):
+    def build_colorbar(self, cbar_ax, cbar_label_str, cmap):
 
         color_norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
 
@@ -693,7 +678,6 @@ class PlottingStuff(DipoleProperties):
             cmap=cmap,
             norm=color_norm,
             orientation='vertical',
-            # location=cbar_location
             )
         cb1.set_label(cbar_label_str)
 
