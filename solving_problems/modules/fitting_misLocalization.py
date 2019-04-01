@@ -512,6 +512,9 @@ class PlottingStuff(DipoleProperties):
         nanorod_angle=0,
         given_ax=None,
         plot_ellipse=True,
+        cbar_ax=None,
+        cbar_label_str=None,
+        cbar_location=None,
         ):
 
         # For main quiver, plot relative mispolarization if true angle is given
@@ -607,18 +610,21 @@ class PlottingStuff(DipoleProperties):
         ax0.set_xlabel(r'$x$ [nm]')
         ax0.set_ylabel(r'$y$ [nm]')
 
-        norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
+
 
         # Build colorbar if building single Axes figure
         if given_ax is None:
-            cb1 = mpl.colorbar.ColorbarBase(ax_cbar, cmap=cmap,
-                                            norm=norm,
-                                            orientation='vertical')
-            cb1.set_label(r'observed angle $\phi$')
-
-            cb1.set_ticks([0, np.pi/8, np.pi/4, np.pi/8 * 3, np.pi/2])
-            cb1.set_ticklabels(
-                [r'$0$', r'$22.5$',r'$45$',r'$67.5$',r'$90$']
+            if cbar_ax is None:
+                cbar_ax=ax_cbar,
+            if cbar_label_str is None:
+                cbar_label_str=r'observed angle $\phi$',
+            if cbar_location is None:
+                cbar_location='right',
+            self.build_colorbar(
+                cbar_ax=cbar_ax,
+                cbar_label_str=cbar_label_str,
+                cbar_location=cbar_location,
+                cmap=cmap
                 )
         else: # Don't build colorbar
             pass
@@ -676,6 +682,25 @@ class PlottingStuff(DipoleProperties):
 
         quiver_axis_handle = ax0
         return [quiver_axis_handle]
+
+
+    def build_colorbar(self, cbar_ax, cbar_label_str, cbar_location, cmap):
+
+        color_norm = mpl.colors.Normalize(vmin=0, vmax=np.pi/2)
+
+        cb1 = mpl.colorbar.ColorbarBase(
+            ax=cbar_ax,
+            cmap=cmap,
+            norm=color_norm,
+            orientation='vertical',
+            # location=cbar_location
+            )
+        cb1.set_label(cbar_label_str)
+
+        cb1.set_ticks([0, np.pi/8, np.pi/4, np.pi/8 * 3, np.pi/2])
+        cb1.set_ticklabels(
+            [r'$0$', r'$22.5$',r'$45$',r'$67.5$',r'$90$']
+            )
 
 
     def calculate_mislocalization_magnitude(self, x_cen, y_cen, x_mol, y_mol):
