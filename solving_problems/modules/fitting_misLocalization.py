@@ -590,6 +590,7 @@ class PlottingStuff(DipoleProperties):
         ## Mark molecule locations
         scat_tr = ax0.scatter(x_plot, y_plot, s=3,
             color='black',
+            zorder=5,
             )
 
         ax0.axis('equal')
