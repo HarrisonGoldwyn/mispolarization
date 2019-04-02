@@ -436,21 +436,7 @@ class PlottingStuff(DipoleProperties):
 
     def scatter_centroids_wLine(self, x_mol_loc, y_mol_loc, appar_cents, ax=None):
 
-    #     trial_images = image_from_E(E)
-    #     appar_cents = calculate_apparent_centroids(trial_images)
-
         x, y = appar_cents
-
-    #     ## This part doesnt work right now
-    #     el_a = 19
-    #     el_c = 67
-    #     quel_a = el_a + 10
-    #     quel_c = el_c + 10
-    #     pt_is_in_ellip = np.ones(x.shape, dtype=bool)
-    # #     for i in np.arange(x.shape[0]):
-    # #         if (x[i]**2./quel_a**2. +  y[i]**2./quel_c**2.) < 1:
-    # #             pt_is_in_ellip[i] = False
-    #     ####
 
         x_plot = x
         y_plot = y
@@ -458,36 +444,36 @@ class PlottingStuff(DipoleProperties):
         if ax == None:
             plt.figure(dpi=300)
             for i in np.arange(x_plot.shape[0]):
-                self.connectpoints(x_plot,
-                    y_plot,
-                    x_mol_loc,
-                    y_mol_loc,
-                    i,
+                self.connectpoints(
+                    cen_x=x_plot,
+                    cen_y=y_plot,
+                    mol_x=x_mol_loc,
+                    mol_y=y_mol_loc,
+                    p=i,
                     zorder=2,
                     )
 
-            plt.scatter(
+            localization_handle = plt.scatter(
                 x_plot,
                 y_plot,
                 s=10,
                 c=[PlottingStuff.a_shade_of_green],
                 zorder=3,
                 )
-            plt.tight_layout()
-
+            # plt.tight_layout()
 
         else:
             for i in np.arange(x_plot.shape[0]):
                 self.connectpoints(
-                    x_plot,
-                    y_plot,
-                    x_mol_loc,
-                    y_mol_loc,
-                    i,
-                    ax,
+                    cen_x=x_plot,
+                    cen_y=y_plot,
+                    mol_x=x_mol_loc,
+                    mol_y=y_mol_loc,
+                    p=i,
+                    ax=ax,
                     zorder=2,
                     )
-            ax.scatter(
+            localization_handle = ax.scatter(
                 x_plot,
                 y_plot,
                 s=10,
@@ -495,11 +481,7 @@ class PlottingStuff(DipoleProperties):
                 zorder=3,
                 )
             return ax
-    #     plt.xlim([-2000,2000])
-    #     plt.ylim([-2000,2000])
 
-
-    # In[41]:
 
     def quiver_plot(
         self,
