@@ -55,9 +55,9 @@ eps_b = n_b**2.
 ## Driving force
 ficticious_field_amp = parameters['general']['drive_amp']
 
-normalization = 1
-print('polarizability reduced by factor of {}'.format(normalization))
-print('coupling scaled up by by factor of {}'.format(normalization))
+# normalization = 1
+# print('polarizability reduced by factor of {}'.format(normalization))
+# print('coupling scaled up by by factor of {}'.format(normalization))
 
 
 
@@ -95,7 +95,7 @@ def sparse_polarizability_tensor(mass, w_res, w, gamma_nr, a, eps_inf, ebs_b):
                            [0,          0, 0],
                            [0,          0, 0]])
 
-    return alpha_0_ij/(normalization)
+    return alpha_0_ij
 
 def sparse_ellipsoid_polarizability(eps, eps_b, a_x, a_y, a_z):
     ''' '''
@@ -366,38 +366,22 @@ def dipole_mags_gened(
     drive_hbar_w=parameters['general']['drive_energy'],
     alpha0_diag=None,
     alpha1_diag=None,
-    # alpha0_diag=sparse_polarizability_tensor(
-    #     mass=fluorophore_mass(
-    #         ext_coef=parameters['fluorophore']['extinction_coeff'],
-    #         gamma=parameters['fluorophore']['mass_gamma']/hbar
-    #         ),
-    #     w_res=parameters['fluorophore']['res_energy']/hbar,
-    #     w=parameters['general']['drive_energy']/hbar,
-    #     gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
-    #     a=0,
-    #     eps_inf=1,
-    #     ebs_b=1
-    #     ),
-    # alpha1_diag=sparse_polarizability_tensor(
-    #     mass=parameters['plasmon']['fit_mass'],
-    #     w_res=parameters['plasmon']['fit_hbar_w0']/hbar,
-    #     w=parameters['general']['drive_energy']/hbar,
-    #     gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar,
-    #     a = parameters['plasmon']['radius'],
-    #     eps_inf=parameters['plasmon']['eps_inf'],
-    #     ebs_b=parameters['general']['background_ref_index']**2.
-    #     )
     ):
+    """ Calculate dipole magnitudes with generalized dyadic
+        polarizabilities
+        """
 
-    phi_0 = mol_angle ## angle of bf_p0
-    p0_hat = rotation_by(phi_0) @ np.array([1,0,0])
+    # Initialize unit vector for molecule dipole in lab frame
+    phi_0 = mol_angle ## angle of bf_p0 in lab frame
 
-    phi_1 = plas_angle ## angle of bf_p1
-    p1_hat = rotation_by(phi_1) @ np.array([1,0,0])
+    # Initialize unit vecotr for molecule dipole in lab frame
+    phi_1 = plas_angle ## angle of bf_p1 in lab frame
 
     if E_d_angle == None:
         E_d_angle = mol_angle
+    # rotate driving field into lab frame
     E_drive = rotation_by(E_d_angle) @ np.array([1,0,0])*ficticious_field_amp
+
 
     alpha_0_p0 = alpha0_diag
     alpha_0 = rotation_by(-phi_0) @ alpha_0_p0 @ rotation_by(phi_0)
@@ -445,10 +429,10 @@ def rotation_by(by_angle):
 def G(drive_hbar_w, d_col):
     ''' assumes input arrays:
     drive_hbar_w : float
-    and vecotrs,
+    and vectors,
     p1_hat.shape = (...,3)
     p2_hat.shape = (...,3)
-    d_col.shape = (...,3) -> interpretable as ... number of row vecZa
+    d_col.shape = (...,3) -> interpretable as ... number of row vectors
     091218: should naivly operate on last dimension as cartesien vector
     091218, 1629: realising this code computes p1 * G * p2, which is
                   a scalar, really I want G.  --->  ^
@@ -456,27 +440,14 @@ def G(drive_hbar_w, d_col):
 
     d = vec_mag(d_col) ## returns shape = (...,1), preserves dimension
     n_hat = d_col/d ## returns shape = (...,3)
-    # print('new n_hat = ',n_hat)
-    # p1_hat = np.array(p1_hat)
-    # if p1_hat.shape == (3,):
-    #     p1_hat = p1_hat.reshape(1,3)
 
-    # p2_hat = np.array(p2_hat) ## ok if shape = (N,3)
-
-    # print('r = ', r)
     w = drive_hbar_w/hbar
     k = w * n_b / c
 
     dyad = np.einsum('...i,...j->...ij',n_hat,n_hat)
-    # n_dot_p1_x_n_dot_p2 = (np.matmul(n_hat, p1_hat)*np.matmul(n_hat, p2_hat))[:,None]
-    # print(n_dot_p1_x_n_dot_p2)
-    # nf_if_vecs = (3.*dyad - np.identity(3))
-    # ff_vecs = (dyad - np.identity(3))
 
     d = d[...,None]
     complex_phase_factor = np.exp(1j*k*d)
-    # print('new nf_if_vecs = ',nf_if_vecs)
-    # print('new nf_if_vecs/d = ',np.einsum('j...,...j->...',nf_if_vecs,1/d))
 
     ## add all piences together to calculate coupling
     g_dip_dip = (
@@ -491,7 +462,8 @@ def G(drive_hbar_w, d_col):
             )
         )
 
-    return g_dip_dip*normalization
+    return g_dip_dip
+
 
 ### ^ requires
 def vec_mag(row_vecs):
@@ -501,71 +473,10 @@ def vec_mag(row_vecs):
     vector_magnitudes = np.linalg.norm(row_vecs, axis=(-1))[:,None]  # breaks if mag == 0, ok?
     return vector_magnitudes
 
+
 def eV_to_Hz(energy):
     return energy/hbar
-##
 
-def dipole_magnitudes(
-    mol_angle,
-    plas_angle,
-    d_col,
-    E_d_angle=None,
-    drive_hbar_w=parameters['general']['drive_energy'],
-    alpha0_diag=None,
-    alpha1_diag=None,
-    # alpha0_diag=sparse_polarizability_tensor(
-    #         mass=fluorophore_mass(
-    #         ext_coef=parameters['fluorophore']['extinction_coeff'],
-    #         gamma=parameters['fluorophore']['mass_gamma']/hbar
-    #         ),
-    #     w_res=parameters['fluorophore']['res_energy']/hbar,
-    #     w=parameters['general']['drive_energy']/hbar,
-    #     gamma_nr=parameters['fluorophore']['test_gamma']/hbar,
-    #     a=0,
-    #     eps_inf=1,
-    #     ebs_b=1
-    #     ),
-    # alpha1_diag=sparse_polarizability_tensor(
-    #     mass=parameters['plasmon']['fit_mass'],
-    #     w_res=parameters['plasmon']['fit_hbar_w0']/hbar,
-    #     w=parameters['general']['drive_energy']/hbar,
-    #     gamma_nr=parameters['plasmon']['fit_hbar_gamma']/hbar,
-    #     a = parameters['plasmon']['radius'],
-    #     eps_inf=parameters['plasmon']['eps_inf'],
-    #     ebs_b=parameters['general']['background_ref_index']**2.
-    #     )
-    ):
-
-    phi_0 = mol_angle ## angle of bf_p0
-    p0_hat = rotation_by(phi_0) @ np.array([1,0,0])
-
-    phi_1 = plas_angle ## angle of bf_p1
-    p1_hat = rotation_by(phi_1) @ np.array([1,0,0])
-
-    if E_d_angle == None:
-        E_d_angle = mol_angle
-    E_drive = rotation_by(E_d_angle) @ np.array([1,0,0])*ficticious_field_amp
-
-    alpha_0_p0 = alpha0_diag
-    alpha_0 = rotation_by(-phi_0) @ alpha_0_p0 @ rotation_by(phi_0)
-
-    alpha_1_p1 = alpha1_diag
-    alpha_1 = rotation_by(-phi_1) @ alpha_1_p1 @ rotation_by(phi_1)
-
-    G_d = G(drive_hbar_w, d_col)
-
-    geometric_coupling_01 = np.linalg.inv(
-        np.identity(3) - alpha_0 @ G_d @ alpha_1 @ G_d
-        )
-    # print('geometric_coupling_01 = ',geometric_coupling_01)
-    # print('alpha_0 = ',alpha_0)
-    # print('alpha_1 = ',alpha_1)
-    # print('E_drive = ',E_drive)
-
-    p0 = np.einsum('...ij,...j->...i',geometric_coupling_01 @ alpha_0, E_drive)
-    p1 = np.einsum('...ij,...j->...i',alpha_1 @ G_d, p0)
-
-    return [p0, p1]
 
 def uncoupled_p0(
     mol_angle,

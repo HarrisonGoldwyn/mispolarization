@@ -748,6 +748,7 @@ class CoupledDipoles(PlottingStuff, FittingTools):
 
         return np.array([Ex,Ey,Ez])
 
+
     def dipole_fields(self, locations, mol_angle=0, plas_angle=np.pi/2):
         d = locations*m_per_nm
         p0, p1 = cp.dipole_mags_gened(
@@ -794,8 +795,6 @@ class CoupledDipoles(PlottingStuff, FittingTools):
 #         print(type(mol_angle))
         return [mol_E, plas_E, p0_unc_E, p0, p1]
 
-
-# In[44]:
 
 class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
     ''' Collect focused+diffracted far-field information from molecules
@@ -897,6 +896,34 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
                     )
                 ),
             ]
+
+
+    def interaction_energy(self,
+        locations=None,
+        mol_angle=None,
+        plas_angle=None,
+        ):
+        """ Calculate interaction energy by evaluating
+            - p_rod * E_mol = - p_rod * G * p_mol
+            """
+        # Set instance attributes as default
+        if locations is None:
+            locations = self.mol_locations
+        if mol_angle is None:
+            mol_angle = self.mol_angles
+        if plas_angle is None:
+            plas_angle = self.rod_angle
+
+        d = locations*m_per_nm
+
+        Gd = cp.G(self.drive_energy_eV, d)
+
+        Gd_dot_p1 = np.einsum('...ij,...j->...i', Gd, self.p1)
+
+        p_dot_E = np.einsum('ij,ij->i', self.p0, Gd_dot_p1)
+
+        return -p_dot_E
+
 
     def calculate_localization(self, save_fields=True):
         """ """
