@@ -450,7 +450,7 @@ class PlottingStuff(DipoleProperties):
                     mol_x=x_mol_loc,
                     mol_y=y_mol_loc,
                     p=i,
-                    zorder=2,
+                    zorder=3,
                     )
 
             localization_handle = plt.scatter(
@@ -458,7 +458,7 @@ class PlottingStuff(DipoleProperties):
                 y_plot,
                 s=10,
                 c=[PlottingStuff.a_shade_of_green],
-                zorder=3,
+                zorder=4,
                 )
             # plt.tight_layout()
 
@@ -471,14 +471,14 @@ class PlottingStuff(DipoleProperties):
                     mol_y=y_mol_loc,
                     p=i,
                     ax=ax,
-                    zorder=2,
+                    zorder=3,
                     )
             localization_handle = ax.scatter(
                 x_plot,
                 y_plot,
                 s=10,
                 c=[PlottingStuff.a_shade_of_green],
-                zorder=3,
+                zorder=4,
                 )
             return ax
 
@@ -538,15 +538,13 @@ class PlottingStuff(DipoleProperties):
             quiv_tr = ax0.quiver(
                 x_plot, y_plot, np.cos(true_mol_angle),np.sin(true_mol_angle),
                 color='black',
-            #     cmap='inferno',
-            #     clim = [0, np.pi/2],
                 width=0.005,
                 scale=15,
-                  scale_units='width',
+                scale_units='width',
                 pivot='mid',
-            #   linewidth=100.,
                 headaxislength=0.0,
-                headlength=0.0
+                headlength=0.0,
+                zorder=1
                 )
 
 
@@ -563,7 +561,7 @@ class PlottingStuff(DipoleProperties):
             scale=12,
             scale_units='width',
             pivot='mid',
-            zorder=4,
+            zorder=2,
             headaxislength=2.5,
             headlength=2.5,
             headwidth=2.5,
@@ -995,6 +993,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         if plot_limits == None: plot_limits = self.default_plot_limits
         if not hasattr(self, 'mispol_angle'):
             self.calculate_polarization()
+
         quiv_ax, = self.quiver_plot(self.mol_locations[:,0],
             self.mol_locations[:,1],
             self.mispol_angle,
@@ -1005,6 +1004,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             given_ax=given_ax,
             plot_ellipse=plot_ellipse
             )
+
         return quiv_ax
 
     def plot_mispol_map_wMisloc(self,
@@ -1012,16 +1012,24 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         given_ax=None,
         plot_ellipse=True,
         ):
+
+        # Compulate localizations if not already stored as cclass attrubute
         if not hasattr(self, 'appar_cents'):
             self.calculate_localization()
+
+        # Set default plot limits if not specified
         if plot_limits == None: plot_limits = self.default_plot_limits
+
+        # Plot mispolarizations
         quiv_ax = self.plot_mispol_map(
             plot_limits,
             given_ax=given_ax,
             plot_ellipse=plot_ellipse,
             )
 
-        self.scatter_centroids_wLine(self.mol_locations[:,0],
+        # Plot mislocalizations
+        self.scatter_centroids_wLine(
+            self.mol_locations[:,0],
             self.mol_locations[:,1],
             self.appar_cents,
             quiv_ax,
