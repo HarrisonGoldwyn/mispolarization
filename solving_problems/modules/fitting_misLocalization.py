@@ -719,9 +719,10 @@ class CoupledDipoles(PlottingStuff, FittingTools):
                 (self.drive_energy_eV/hbar)*np.sqrt(self.eps_b)/c
                 )
             )
+        # This is not true, but does not matter as long as no dipoles have
+        # z components.
         pz_fields = np.zeros(py_fields.shape)
-    #     print('px_fields.shape=',px_fields.shape)
-    #     print('p.shape=',p.shape)
+
         ## returns [Ex, Ey, Ez] for dipoles oriented along cart units
 
         Ex = (
@@ -821,9 +822,12 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         obs_points=None,
         for_fit=False,
         isolate_mode=None,
-        drive_energy_eV=parameters['general']['drive_energy'],
+        drive_energy_eV=None,
         exclude_interference=False,
         ):
+
+        if drive_energy_eV is None:
+            drive_energy_eV = self.drive_energy_eV
 
         CoupledDipoles.__init__(self,
             obs_points,
@@ -898,7 +902,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             ]
 
 
-    def interaction_energy(self,
+    def work_on_rod_by_mol(self,
         locations=None,
         mol_angle=None,
         plas_angle=None,
@@ -918,11 +922,16 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
 
         Gd = cp.G(self.drive_energy_eV, d)
 
-        Gd_dot_p1 = np.einsum('...ij,...j->...i', Gd, self.p1)
+        Gd_dot_p0 = np.einsum('...ij,...j->...i', Gd, self.p0)
 
-        p_dot_E = np.einsum('ij,ij->i', self.p0, Gd_dot_p1)
+        p1stardot_dot_E0 = np.einsum(
+            'ij,ij->i',
+            -1j*self.drive_energy_eV/hbar * self.p1,
+            Gd_dot_p0
+            )
 
-        return -p_dot_E
+        work_done = 1/2 * np.real(p1stardot_dot_E0)
+        return work_done
 
 
     def calculate_localization(self, save_fields=True):
