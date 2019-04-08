@@ -279,7 +279,7 @@ class FittingTools(object):
                 obs_points[1]: meshed X array
                 obs_points[2]: meshed Y array
         """
-        if obs_points==None:
+        if obs_points is None:
             self.obs_points = eye
         else:
             self.obs_points = obs_points
@@ -429,7 +429,7 @@ class PlottingStuff(DipoleProperties):
     def connectpoints(self, cen_x, cen_y, mol_x, mol_y, p, ax=None, zorder=1):
         x1, x2 = mol_x[p], cen_x[p]
         y1, y2 = mol_y[p], cen_y[p]
-        if ax == None:
+        if ax is None:
             plt.plot([x1,x2],[y1,y2],'k-', linewidth=.3, zorder=zorder)
         else:
             ax.plot([x1,x2],[y1,y2],'k-', linewidth=.3, zorder=zorder)
@@ -441,7 +441,7 @@ class PlottingStuff(DipoleProperties):
         x_plot = x
         y_plot = y
 
-        if ax == None:
+        if ax is None:
             plt.figure(dpi=300)
             for i in np.arange(x_plot.shape[0]):
                 self.connectpoints(
@@ -988,19 +988,19 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             quenching zone, defined as 10 nm from surface of fit spheroid
             '''
 
-        if rod_angle == None:
+        if rod_angle is None:
             rod_angle=self.rod_angle
 
-        if input_x_mol == None:
+        if input_x_mol is None:
             input_x_mol=self.input_x_mol
 
-        if input_y_mol == None:
+        if input_y_mol is None:
             input_y_mol=self.input_y_mol
 
-        if long_quench_radius == None:
+        if long_quench_radius is None:
             long_quench_radius=self.quel_a
 
-        if short_quench_radius == None:
+        if short_quench_radius is None:
             short_quench_radius=self.quel_c
 
         rotated_x = (
@@ -1026,7 +1026,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         plot_ellipse=True,
         ):
 
-        if plot_limits == None: plot_limits = self.default_plot_limits
+        if plot_limits is None: plot_limits = self.default_plot_limits
         if not hasattr(self, 'mispol_angle'):
             self.calculate_polarization()
 
@@ -1054,7 +1054,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             self.calculate_localization()
 
         # Set default plot limits if not specified
-        if plot_limits == None: plot_limits = self.default_plot_limits
+        if plot_limits is None: plot_limits = self.default_plot_limits
 
         # Plot mispolarizations
         quiv_ax = self.plot_mispol_map(
@@ -1135,7 +1135,7 @@ class FitModelToData(FittingTools,PlottingStuff):
 
         self.mol_angle=0
 
-        if rod_angle == None:
+        if rod_angle is None:
             self.rod_angle = np.pi/2
         else:
             self.rod_angle = rod_angle
@@ -1429,7 +1429,7 @@ class FitModelToData(FittingTools,PlottingStuff):
 
         if not hasattr(self, 'model_fit_results'):
             self.fit_model_to_image_data()
-        if plot_limits == None:
+        if plot_limits is None:
             plot_limits = fitted_exp_instance.default_plot_limits
 
         quiv_ax, = self.quiver_plot(
@@ -1500,7 +1500,7 @@ class FitModelToData(FittingTools,PlottingStuff):
 #         '''...'''
 #         if not hasattr(self, 'model_fit_results'):
 #             self.fit_model_to_noised_model_image_data()
-#         if plot_limits == None:
+#         if plot_limits is None:
 #             plot_limits = fitted_exp_instance.default_plot_limits
 #         quiv_ax, = self.quiver_plot(
 #             fitted_exp_instance.mol_locations[:,0],
