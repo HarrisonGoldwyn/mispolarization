@@ -496,6 +496,7 @@ class PlottingStuff(DipoleProperties):
         plot_ellipse=True,
         cbar_ax=None,
         cbar_label_str=None,
+        draw_quadrant=True,
         ):
 
         # For main quiver, plot relative mispolarization if true angle is given
@@ -597,37 +598,63 @@ class PlottingStuff(DipoleProperties):
 
         curly_nanorod_color = (241/255, 223/255, 182/255)
         if nanorod_angle == np.pi/2:
-            # Draw rod
-            circle = mpl.patches.Circle(
-                (0, 24),
-                20,
-                # facecolor='Gold',
-                facecolor=curly_nanorod_color,
-                edgecolor='Black',
-                linewidth=0,
-                )
-            bot_circle = mpl.patches.Circle(
-                (0, -24),
-                20,
-                # facecolor='Gold',
-                facecolor=curly_nanorod_color,
-                edgecolor='Black',
-                linewidth=0,
-                )
-            rect = mpl.patches.Rectangle(
-                (-20,-24),
-                40,
-                48,
-                angle=0.0,
-                # facecolor='Gold',
-                facecolor=curly_nanorod_color,
-                edgecolor='Black',
-                linewidth=0,
-                )
 
-            ax0.add_patch(circle)
-            ax0.add_patch(rect)
-            ax0.add_patch(bot_circle)
+            if draw_quadrant==True:
+                top_wedge = mpl.patches.Wedge(
+                    center=(0, 24),
+                    r=20,
+                    theta1=0,
+                    theta2=90,
+                    facecolor=curly_nanorod_color,
+                    edgecolor='Black',
+                    linewidth=0,
+                    )
+                rect = mpl.patches.Rectangle(
+                    (0, 0),
+                    20,
+                    24,
+                    angle=0.0,
+                    # facecolor='Gold',
+                    facecolor=curly_nanorod_color,
+                    edgecolor='Black',
+                    linewidth=0,
+                    )
+                ax0.add_patch(top_wedge)
+                ax0.add_patch(rect)
+
+
+            elif draw_quadrant==False:
+                # Draw rod
+                circle = mpl.patches.Circle(
+                    (0, 24),
+                    20,
+                    # facecolor='Gold',
+                    facecolor=curly_nanorod_color,
+                    edgecolor='Black',
+                    linewidth=0,
+                    )
+                bot_circle = mpl.patches.Circle(
+                    (0, -24),
+                    20,
+                    # facecolor='Gold',
+                    facecolor=curly_nanorod_color,
+                    edgecolor='Black',
+                    linewidth=0,
+                    )
+                rect = mpl.patches.Rectangle(
+                    (-20,-24),
+                    40,
+                    48,
+                    angle=0.0,
+                    # facecolor='Gold',
+                    facecolor=curly_nanorod_color,
+                    edgecolor='Black',
+                    linewidth=0,
+                    )
+
+                ax0.add_patch(circle)
+                ax0.add_patch(rect)
+                ax0.add_patch(bot_circle)
 
         ## Draw projection of model spheroid as ellipse
         if plot_ellipse==True:
@@ -973,7 +1000,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
                         np.transpose(self.bem_E, (2,0,1))
                         )
                 )
-        self.mispol_angle= MolCoupNanoRodExp.f_inv(self.angles)
+        self.mispol_angle = MolCoupNanoRodExp.f_inv(self.angles)
 
 
     def mol_not_quenched(self,
@@ -1024,6 +1051,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         plot_limits=None,
         given_ax=None,
         plot_ellipse=True,
+        draw_quadrant=True,
         ):
 
         if plot_limits is None: plot_limits = self.default_plot_limits
@@ -1038,7 +1066,8 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             nanorod_angle=self.rod_angle,
             title=r'Split Pol. and Gau. Fit Loc.',
             given_ax=given_ax,
-            plot_ellipse=plot_ellipse
+            plot_ellipse=plot_ellipse,
+            draw_quadrant=draw_quadrant,
             )
 
         return quiv_ax
@@ -1047,6 +1076,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         plot_limits=None,
         given_ax=None,
         plot_ellipse=True,
+        draw_quadrant=True,
         ):
 
         # Compulate localizations if not already stored as cclass attrubute
@@ -1061,6 +1091,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
             plot_limits,
             given_ax=given_ax,
             plot_ellipse=plot_ellipse,
+            draw_quadrant=draw_quadrant,
             )
 
         # Plot mislocalizations
@@ -1304,19 +1335,23 @@ class FitModelToData(FittingTools,PlottingStuff):
             # Store fit result parameters as class instance attribute.
             self.model_fit_results[i][:2] = optimized_fit['x'][:2]
             # Project fit result angles to first quadrant
-            angle_in_first_quad = np.arctan(
-                np.abs(np.sin(optimized_fit['x'][2]))
-                /
-                np.abs(np.cos(optimized_fit['x'][2]))
+            angle_in_first_quad = self.map_angles_to_first_quad(
+                optimized_fit['x'][2]
                 )
+
             self.model_fit_results[i][2] = angle_in_first_quad
 
         return self.model_fit_results
 
 
-    # def naive_ini_guess(self, image):
-    #     ini_x, ini_y = self.calculate_apparent_centroids(image)
-    #     return ini_x, ini_y
+    def map_angles_to_first_quad(self, angles):
+        angle_in_first_quad = np.arctan(
+            np.abs(np.sin(angles))
+            /
+            np.abs(np.cos(angles))
+            )
+        return angle_in_first_quad
+
 
     def calculate_localization(self, save_fields=True):
         """ """
@@ -1423,7 +1458,8 @@ class FitModelToData(FittingTools,PlottingStuff):
         self,
         fitted_exp_instance,
         plot_limits=None,
-        given_ax=None
+        given_ax=None,
+        draw_quadrant=True,
         ):
         '''...'''
 
@@ -1440,7 +1476,8 @@ class FitModelToData(FittingTools,PlottingStuff):
             true_mol_angle = fitted_exp_instance.mol_angles,
             nanorod_angle = fitted_exp_instance.rod_angle,
             title=r'Model Fit Pol. and Loc.',
-            given_ax=given_ax
+            given_ax=given_ax,
+            draw_quadrant=draw_quadrant,
             )
         self.scatter_centroids_wLine(fitted_exp_instance.mol_locations[:,0],
                                 fitted_exp_instance.mol_locations[:,1],
