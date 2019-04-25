@@ -854,7 +854,7 @@ class MolCoupNanoRodExp(CoupledDipoles, BeamSplitter):
         ):
 
         if drive_energy_eV is None:
-            drive_energy_eV = self.drive_energy_eV
+            drive_energy_eV = parameters['general']['drive_energy']
 
         CoupledDipoles.__init__(self,
             obs_points,
@@ -1164,7 +1164,7 @@ class FitModelToData(FittingTools,PlottingStuff):
         rod_angle=None,
         ):
 
-        self.mol_angle=0
+        self.mol_angles=0
 
         if rod_angle is None:
             self.rod_angle = np.pi/2
@@ -1467,6 +1467,8 @@ class FitModelToData(FittingTools,PlottingStuff):
             self.fit_model_to_image_data()
         if plot_limits is None:
             plot_limits = fitted_exp_instance.default_plot_limits
+
+        self.mol_angles = fitted_exp_instance.mol_angles
 
         quiv_ax, = self.quiver_plot(
             fitted_exp_instance.mol_locations[:,0],
