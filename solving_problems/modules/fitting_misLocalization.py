@@ -596,10 +596,17 @@ class PlottingStuff(DipoleProperties):
         else: # Don't build colorbar
             pass
 
+
+        # Draw the rod and ellipse
         curly_nanorod_color = (241/255, 223/255, 182/255)
+        curly_nanorod_color_light = (241/255, 223/255, 182/255, 0.5)
+
         if nanorod_angle == np.pi/2:
 
             if draw_quadrant==True:
+
+                # rod = self.draw_rod(color=curly_nanorod_color_light)
+
                 top_wedge = mpl.patches.Wedge(
                     center=(0, 24),
                     r=20,
@@ -619,38 +626,16 @@ class PlottingStuff(DipoleProperties):
                     edgecolor='Black',
                     linewidth=0,
                     )
+
+                # for piece in rod:
+                #     ax0.add_patch(piece)
                 ax0.add_patch(top_wedge)
                 ax0.add_patch(rect)
 
 
             elif draw_quadrant==False:
                 # Draw rod
-                circle = mpl.patches.Circle(
-                    (0, 24),
-                    20,
-                    # facecolor='Gold',
-                    facecolor=curly_nanorod_color,
-                    edgecolor='Black',
-                    linewidth=0,
-                    )
-                bot_circle = mpl.patches.Circle(
-                    (0, -24),
-                    20,
-                    # facecolor='Gold',
-                    facecolor=curly_nanorod_color,
-                    edgecolor='Black',
-                    linewidth=0,
-                    )
-                rect = mpl.patches.Rectangle(
-                    (-20,-24),
-                    40,
-                    48,
-                    angle=0.0,
-                    # facecolor='Gold',
-                    facecolor=curly_nanorod_color,
-                    edgecolor='Black',
-                    linewidth=0,
-                    )
+                [circle, rect, bot_circle] = self.draw_rod()
 
                 ax0.add_patch(circle)
                 ax0.add_patch(rect)
@@ -659,23 +644,108 @@ class PlottingStuff(DipoleProperties):
         ## Draw projection of model spheroid as ellipse
         if plot_ellipse==True:
             curly_dashed_line_color = (120/255, 121/255, 118/255)
-            ellip = mpl.patches.Ellipse(
-                (0,0),
-                2*self.el_a,
-                2*self.el_c,
-                angle=nanorod_angle*180/np.pi,
-                fill=False,
-                # edgecolor='Black',
-                edgecolor=curly_dashed_line_color,
-                linestyle='--'
-                )
-            ax0.add_patch(ellip)
+
+            if draw_quadrant is True:
+                ellip_quad = mpl.patches.Arc(
+                    (0,0),
+                    2*self.el_c,
+                    2*self.el_a,
+                    # angle=nanorod_angle*180/np.pi,
+                    theta1=0,
+                    theta2=90,
+                    # fill=False,
+                    # edgecolor='Black',
+                    edgecolor=curly_dashed_line_color,
+                    linestyle='--',
+                    linewidth=1.5
+                    )
+                ax0.add_patch(ellip_quad)
+
+                # translucent_ellip = mpl.patches.Ellipse(
+                #     (0,0),
+                #     2*self.el_a,
+                #     2*self.el_c,
+                #     angle=nanorod_angle*180/np.pi,
+                #     fill=False,
+                #     # edgecolor='Black',
+                #     edgecolor=curly_dashed_line_color,
+                #     linestyle='--',
+                #     alpha=0.5
+                #     )
+                # ax0.add_patch(translucent_ellip)
+
+
+                # Draw lines along x and y axis to finish bounding
+                # quadrant.
+                ax0.plot(
+                    [0,0],
+                    [0,self.el_a],
+                    linestyle='--',
+                    color=curly_dashed_line_color,
+                    )
+                ax0.plot(
+                    [0,self.el_c],
+                    [0,0],
+                    linestyle='--',
+                    color=curly_dashed_line_color,
+                    )
+
+            elif draw_quadrant is False:
+                ellip = mpl.patches.Ellipse(
+                    (0,0),
+                    2*self.el_a,
+                    2*self.el_c,
+                    angle=nanorod_angle*180/np.pi,
+                    fill=False,
+                    # edgecolor='Black',
+                    edgecolor=curly_dashed_line_color,
+                    linestyle='--',
+                    )
+
+                ax0.add_patch(ellip)
+
         elif plot_ellipse==False:
             pass
 
         quiver_axis_handle = ax0
         return [quiver_axis_handle]
 
+    def draw_rod(
+        self,
+        color=None,
+        **kwargs
+        ):
+
+        if color is None:
+            color = self.curly_nanorod_color
+        circle = mpl.patches.Circle(
+            (0, 24),
+            20,
+            # facecolor='Gold',
+            facecolor=color,
+            edgecolor='Black',
+            linewidth=0,
+            )
+        bot_circle = mpl.patches.Circle(
+            (0, -24),
+            20,
+            # facecolor='Gold',
+            facecolor=color,
+            edgecolor='Black',
+            linewidth=0,
+            )
+        rect = mpl.patches.Rectangle(
+            (-20,-24),
+            40,
+            48,
+            angle=0.0,
+            # facecolor='Gold',
+            facecolor=color,
+            edgecolor='Black',
+            linewidth=0,
+            )
+
+        return [circle, rect, bot_circle]
 
     def build_colorbar(self, cbar_ax, cbar_label_str, cmap):
 

@@ -322,12 +322,18 @@ class SimulatedExperiment(Simulation,fit.MolCoupNanoRodExp):
 
         Simulation.__init__(self, locations, mol_angle, plas_angle)
 
-    def plot_mispol_map_wMisloc(self, plot_limits=None, given_ax=None,):
+    def plot_mispol_map_wMisloc(self,
+        plot_limits=None,
+        given_ax=None,
+        **kwargs,
+        ):
+
         return fit.MolCoupNanoRodExp.plot_mispol_map_wMisloc(
             self,
             plot_limits=plot_limits,
             given_ax=given_ax,
             plot_ellipse=False,
+            **kwargs
             )
 
 
@@ -462,7 +468,8 @@ def fig5(
     quiv_ax_limits=[-25,150,-25,150],
     quiv_tick_list=np.linspace(0,125,6),
     quiv_ticklabel_list=[r'$0$', r'$25$',r'$50$',r'$75$',r'$100$',r'$125$'],
-    fig_size=(6.5, 2.9)
+    fig_size=(6.5, 2.9),
+    draw_quadrant=True,
     ):
 
     cbar_width = 0.15
@@ -471,40 +478,77 @@ def fig5(
     heights = [1]
     gs_kw = dict(width_ratios=widths, height_ratios=heights)
 
-    paper_fig, paper_axs = plt.subplots(
-        nrows=1,
-        ncols=4,
-    #     sharey=True,
+    # paper_fig, paper_axs = plt.subplots(
+    #     nrows=1,
+    #     ncols=4,
+    # #     sharey=True,
+    #     figsize=fig_size,
+    #     dpi=300,
+    #     constrained_layout=True,
+    #     gridspec_kw=gs_kw,
+    #     # sharey='row',
+    #     )
+
+    paper_fig = plt.figure(
         figsize=fig_size,
         dpi=300,
         constrained_layout=True,
-        gridspec_kw=gs_kw
+        )
+    spec = mpl.gridspec.GridSpec(
+        nrows=1,
+        ncols=4,
+        figure=paper_fig,
+        **gs_kw,
         )
 
-    left_ax = sim_instance.plot_mispol_map_wMisloc(given_ax=paper_axs.flatten()[1])
-    left_ax.yaxis.tick_right()
-    left_ax.yaxis.set_label_position("right")
-    # left_ax.set_title(None)
+    # Add 4 axes to figure
+    paper_axs = []
+    paper_axs.append(paper_fig.add_subplot(spec[0, 0]))
+    paper_axs.append(paper_fig.add_subplot(spec[0, 1]))
+    paper_axs.append(
+        paper_fig.add_subplot(
+            spec[0, 2],
+            sharey=paper_axs[1]
+            )
+        )
+    paper_axs.append(
+        paper_fig.add_subplot(spec[0, 3], sharey=paper_axs[0])
+        )
 
-    right_ax = fit_model_instance.plot_fit_results_as_quiver_map(sim_instance, given_ax=paper_axs.flatten()[2])
-    # right_ax.set_title(None)
+
+    paper_axs[1] = sim_instance.plot_mispol_map_wMisloc(
+        given_ax=paper_axs[1],
+        draw_quadrant=draw_quadrant,
+        )
+
+    # Place left ticks and labels on the right
+    paper_axs[1].yaxis.tick_right()
+    paper_axs[1].yaxis.set_label_position("right")
+    for tk in paper_axs[1].get_yticklabels():
+        tk.set_visible(True)
+    # paper_axs[1].set_title(None)
+
+    paper_axs[2] = fit_model_instance.plot_fit_results_as_quiver_map(
+        sim_instance, given_ax=paper_axs[2],
+        draw_quadrant=draw_quadrant)
+    # paper_axs[2].set_title(None)
 
     fit_model_instance.build_colorbar(
-        paper_axs.flatten()[0],
+        paper_axs[0],
         r'PBD polarization angle [$\Delta^\circ$]',
         fit.PlottingStuff.curlycm
         )
 
     fit_model_instance.build_colorbar(
-        paper_axs.flatten()[3],
+        paper_axs[3],
         'Molecule angle by model fit [deg]',
         fit.PlottingStuff.curlycm
         )
 
-    paper_axs.flatten()[0].yaxis.tick_left()
-    paper_axs.flatten()[0].yaxis.set_label_position("left")
+    paper_axs[0].yaxis.tick_left()
+    paper_axs[0].yaxis.set_label_position("left")
 
-    # Legends
+    # Build legends
     def loc_map_legend(ax, loc_label='fit localization'):
         legend_elements = [
             mpl.lines.Line2D(
@@ -535,14 +579,14 @@ def fig5(
     #         loc=1
             )
 
-    # loc_map_legend(paper_axs.flatten()[1])
-    loc_map_legend(paper_axs.flatten()[2], loc_label='fit localization')
+    # Plot Legend
+    # loc_map_legend(paper_axs[2], loc_label='fit localization')
 
     # Title
-    paper_axs.flatten()[1].set_title(None)
-    paper_axs.flatten()[1].set_title('(a)', loc='left')
-    paper_axs.flatten()[2].set_title(None)
-    paper_axs.flatten()[2].set_title('(b)', loc='left')
+    paper_axs[1].set_title(None)
+    paper_axs[1].set_title('(a)', loc='left')
+    paper_axs[2].set_title(None)
+    paper_axs[2].set_title('(b)', loc='left')
 
 
 
@@ -551,11 +595,11 @@ def fig5(
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # rotate right colorbar label
-    paper_axs.flatten()[3].set_ylabel(None)
-    # paper_axs.flatten()[3].yaxis.set_label_position("right")
-    paper_axs.flatten()[3].set_ylabel(r'Model fit molecule polarization [$\Delta^\circ$]',rotation=270,va="bottom")
+    paper_axs[3].set_ylabel(None)
+    # paper_axs[3].yaxis.set_label_position("right")
+    paper_axs[3].set_ylabel(r'Model fit molecule polarization [$\Delta^\circ$]',rotation=270,va="bottom")
 
-    for cbar_ax in [paper_axs.flatten()[3],paper_axs.flatten()[0]]:
+    for cbar_ax in [paper_axs[3],paper_axs[0]]:
     #     cbar_ax.yaxis.set_ticks(np.linspace(0,np.pi/2,10))
     #     cbar_ax.yaxis.set_ticklabels(
     #         [r'$0$', r'$10$',r'$20$',r'$30$',r'$40$',r'$50$',r'$60$',r'$70$',r'$80$',r'$90$',]
@@ -566,13 +610,15 @@ def fig5(
             )
 
     # Redo quiver ticks
-    for quiver_ax in [paper_axs.flatten()[i+1] for i in range(2)]:
+    for quiver_ax in [paper_axs[i+1] for i in range(2)]:
         quiver_ax.tick_params(direction='in'),
 
-    #     quiver_ax.set_ylim([-10,165])
+
         # set axis equal
-        quiver_ax.axis('equal')
+        # quiver_ax.axis('equal')
+        # quiver_ax.set_ylim(-10,165)
         quiver_ax.axis(quiv_ax_limits)
+        # quiver_ax.set_ylim(quiv_ax_limits[:2])
 
         quiver_ticks = np.linspace(0,125,5)
         for quiver_axis in [quiver_ax.yaxis, quiver_ax.xaxis]:
@@ -585,9 +631,21 @@ def fig5(
         quiver_ax.set_xlabel(r'$x$ position [nm]')
         quiver_ax.set_ylabel(r'$y$ position [nm]')
 
-    right_ax.set_ylabel(None)
-    right_ax.yaxis.set_ticklabels([None])
+    paper_axs[2].set_ylabel(None)
+    # paper_axs[2].set_yticklabels([None])
+    paper_axs[2].tick_params(labelleft=False)
 
+    # Things I tried to get yticklabels to show up with sharey
+    # paper_axs[1].yaxis.set_tick_params(
+    #     which='both',
+    #     labelright=True,
+    #     )
+    # plt.setp(paper_axs[1].get_yticklabels(), visible=True)
+    # for tk in paper_axs[1].get_yticklabels():
+    #     print(tk)
+    #     tk.set_visible(True)
+
+    return paper_fig
 
 def map_angles_to_first_quad(angles):
     angle_in_first_quad = np.arctan(
