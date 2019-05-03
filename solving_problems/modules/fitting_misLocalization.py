@@ -56,7 +56,8 @@ import scipy.special as spf
 import yaml
 
 ## import diffrantion integral solver from Optics folder
-project_path = ('/Users/chair/Documents/Academia/SuperRes/Biteen_colab/'
+project_path = (
+    '/Users/chair/Documents/Academia/SuperRes/Biteen_colab/'
     +
     'Mispolarization/python/gitted'
     )
