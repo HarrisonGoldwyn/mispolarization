@@ -1,1 +1,0 @@
-Needs to be run in conda environmnent `py36`
